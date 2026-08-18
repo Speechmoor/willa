@@ -1,0 +1,36 @@
+# The corpus PDFs are committed so a clone can build an index and reproduce
+# the evaluation without depending on any website still being up.
+# scripts/fetch_corpus.py refreshes them, and corpus/MANIFEST.md records where
+# each file came from and when.
+corpus/*.md
+!corpus/*.pdf
+!corpus/MANIFEST.md
+!corpus/.gitkeep
+
+# The index is derived from the corpus by one command. A stale index fails
+# silently by returning plausible passages from the wrong text, so it is built
+# rather than committed:  python scripts/ingest.py
+data/index.npz
+data/chunks.json
+
+# data/ui_strings_mt.json is deliberately NOT ignored. It starts as machine
+# output and becomes a reviewed asset, so corrections must survive a rebuild
+# and be visible in a diff.
+
+# Contains user data when CLAIMS_STORE_ENABLED is on.
+data/claims.jsonl
+
+__pycache__/
+*.pyc
+.venv/
+venv/
+logs/
+models/
+
+.DS_Store
+~$*
+*.bak
+
+# PowerPoint builds live outside the repo. A 27 MB binary is not something a
+# git history can be relieved of later.
+*.pptx

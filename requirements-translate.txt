@@ -1,0 +1,13 @@
+# The nine-language pipeline. Separate from requirements.txt because torch is
+# a large install and Willa runs in English without it.
+#
+#   pip install -r requirements-translate.txt
+#   python scripts/fetch_translator.py     # NLLB-200-distilled-600M, ~2.4 GB
+#
+# Or let setup.sh do both:  ./setup.sh --translate
+
+-r requirements.txt
+
+torch>=2.2
+transformers>=4.44
+sentencepiece>=0.2

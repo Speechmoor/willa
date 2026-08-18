@@ -1,0 +1,2684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Willa — Small Claims Court letter of demand</title>
+<script>
+/* Set the theme before first paint, otherwise the page flashes dark then
+   snaps to light. localStorage here holds one word — a display preference,
+   never anything from the form. */
+try{
+  var _t = localStorage.getItem("willa-theme");
+  if(_t !== "light" && _t !== "dark")
+    _t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  document.documentElement.dataset.theme = _t;
+}catch(e){ document.documentElement.dataset.theme = "dark"; }
+</script>
+<style>
+/* ---------------------------------------------------------------------------
+   Willa — dark constellation Palette kept, everything else rebuilt. Deep
+   navy field, gold as the single accent, white text. */
+:root{
+  --navy:#0b192c; --navy-2:#0e2038; --navy-3:#12263f;
+  --gold:#f5a623; --gold-hi:#ffbe4d;
+  /* --gold is the surface colour; --gold-ink is the one safe to set text in.
+     They are identical on dark (~7:1) and diverge on light, where raw gold
+     measures ~2:1 against white and fails WCAG outright. */
+  --gold-ink:#f5a623;
+  --paper:#eef2f7; --dim:#95a6bd; --dimmer:#6b7f99;
+  --line:rgba(148,175,214,.16);
+  --glass:rgba(16,33,56,.62);
+  --danger:#ff7b6b; --danger-bg:rgba(255,90,70,.09); --danger-line:rgba(255,90,70,.42);
+  --ok:#4ade9b;
+  --field:
+    radial-gradient(70% 55% at 82% 14%,#1b3a4d 0,transparent 60%),
+    radial-gradient(65% 50% at 14% 42%,#16303f 0,transparent 62%),
+    radial-gradient(80% 60% at 55% 96%,#122636 0,transparent 65%),
+    #0b192c;
+  --veil:linear-gradient(180deg,rgba(11,25,44,0) 0,rgba(11,25,44,.12) 55%,rgba(11,25,44,.3) 100%);
+  --sel:rgba(245,166,35,.28);
+  --input:rgba(6,16,30,.55); --input-hi:rgba(6,16,30,.8); --sheet:rgba(6,16,30,.72);
+  --chip:rgba(11,25,44,.4); --scheme:dark;
+
+  --pill:999px;
+  --ease:cubic-bezier(.22,.61,.36,1);
+  /* Hero was running to 5.6rem while section headings sat at 2.4rem — a 2.3×
+     jump that made everything below look like an afterthought. Tightened to
+     roughly 1.7× so the page reads as one hierarchy. */
+  --hero:clamp(2.1rem,4.3vw,3.5rem);
+  --h2:clamp(1.5rem,2.6vw,2.05rem);
+  --wordmark:clamp(2rem,3.4vw,2.7rem);
+}
+
+/* Light theme. Gold measures ~2:1 on white, so on this side it never
+   carries text — it stays a surface, a rule or a focus ring, with navy on
+   top. */
+:root[data-theme="light"]{
+  --paper:#0b192c;                       /* text colour, not background */
+  --dim:#4a5b72; --dimmer:#6b7f99;
+  --line:rgba(11,25,44,.14);
+  --glass:rgba(255,255,255,.78);
+  --gold-hi:#e59308; --gold-ink:#8f5c00;
+  --danger:#b3261e; --danger-bg:rgba(179,38,30,.06); --danger-line:rgba(179,38,30,.3);
+  --ok:#1f7a4d;
+  --field:
+    radial-gradient(70% 55% at 82% 14%,#eef3fa 0,transparent 60%),
+    radial-gradient(65% 50% at 14% 42%,#f3f6fb 0,transparent 62%),
+    radial-gradient(80% 60% at 55% 96%,#eaf0f8 0,transparent 65%),
+    #ffffff;
+  --veil:linear-gradient(180deg,rgba(255,255,255,0) 0,rgba(255,255,255,.14) 55%,rgba(255,255,255,.34) 100%);
+  --sel:rgba(245,166,35,.4);
+  --input:rgba(255,255,255,.86); --input-hi:#ffffff; --sheet:rgba(255,255,255,.92);
+  --chip:rgba(255,255,255,.7); --scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;overflow-x:hidden}
+/* min-width:0 lets flex and grid children shrink below their content size.
+   Without it a long unbroken string in a flex item forces the whole row wider
+   than the viewport, which is the usual cause of a page that scrolls sideways. */
+.shell,.sec,.card,.lang,.sec-head{min-width:0}
+.sec-title,.lang-name{overflow-wrap:break-word;min-width:0}
+body{
+  margin:0;min-height:100vh;color:var(--paper);
+  /* Three spread pools rather than one bright corner, so the field is lit
+     evenly and the network reads everywhere. Swapped wholesale by theme. */
+  background:var(--field);
+  background-attachment:fixed;
+  transition:background-color .35s var(--ease),color .35s var(--ease);
+  /* Latin Extended Additional required for Tshivenḓa (ḓ ṱ ṅ ṋ ḽ) and
+     Sepedi/Setswana (ê ô š). All of these stacks carry it. */
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;
+}
+/* width/height are NOT optional here. <canvas> is a replaced element, so with
+   inset:0 alone it keeps its intrinsic 300x150 instead of stretching, and the
+   whole simulation ends up crammed into a box in the corner. */
+#sky{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block}
+/* The veil exists only to keep body copy legible over moving dots. It used
+   to ramp to 92% opacity, which erased the network across the whole lower
+   page — the constellation was there, just painted over. */
+.veil{position:fixed;inset:0;z-index:1;pointer-events:none;background:var(--veil)}
+.stack{position:relative;z-index:2}
+.shell{max-width:960px;margin:0 auto;padding:0 30px}
+@media(max-width:600px){.shell{padding:0 20px}}
+
+/* --- nav ----------------------------------------------------------------- */
+.nav .shell{display:flex;align-items:center;gap:18px;padding-block:26px;flex-wrap:wrap}
+/* Wordmark sized in em off --wordmark so the keyhole scales with the letters
+   instead of drifting out of register at different viewport widths. */
+/* align-items:baseline, not center. The keyhole is an empty flex item, so
+   a flex container aligns it by its bottom margin edge — which puts the
+   bottom of the keyhole on the text baseline, flush with the letters. */
+.mark{display:flex;align-items:baseline;font-size:var(--wordmark);font-weight:800;letter-spacing:-.045em;color:var(--paper);line-height:1}
+.keyhole{width:.34em;height:.66em;position:relative;margin-inline:.02em}
+.keyhole::before{content:"";position:absolute;top:.02em;left:50%;width:.25em;height:.25em;border-radius:50%;
+  background:var(--gold);transform:translateX(-50%);box-shadow:0 0 .38em rgba(245,166,35,.8)}
+.keyhole::after{content:"";position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+  border-left:.125em solid transparent;border-right:.125em solid transparent;border-bottom:.44em solid var(--gold)}
+.nav-tag{margin-inline-start:auto;font-size:.66rem;letter-spacing:.22em;text-transform:uppercase;color:var(--dimmer)}
+.theme-btn{width:38px;height:38px;flex:none;display:grid;place-items:center;padding:0;cursor:pointer;
+  background:transparent;border:1px solid var(--line);border-radius:50%;color:var(--paper);
+  transition:border-color .2s,color .2s,transform .2s var(--ease)}
+.theme-btn:hover{border-color:var(--gold);color:var(--gold-ink);transform:rotate(-18deg)}
+.theme-btn:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.theme-btn svg{width:17px;height:17px;display:block}
+.theme-btn .sun{display:none}
+:root[data-theme="light"] .theme-btn .sun{display:block}
+:root[data-theme="light"] .theme-btn .moon{display:none}
+
+/* --- nav menu ------------------------------------------------------------
+   Sits beside the theme toggle. The panel is anchored to the right edge of
+   its button so it opens inward and cannot push the layout sideways on a
+   narrow screen. */
+.menu-wrap{position:relative;flex:none}
+.menu-btn{width:38px;height:38px;display:grid;place-items:center;padding:0;cursor:pointer;
+  background:transparent;border:1px solid var(--line);border-radius:50%;color:var(--paper);
+  transition:border-color .2s,color .2s}
+.menu-btn:hover{border-color:var(--gold);color:var(--gold-ink)}
+.menu-btn:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.menu-btn svg{width:17px;height:17px;display:block}
+.menu-panel{position:absolute;top:calc(100% + 10px);inset-inline-end:0;z-index:40;
+  min-width:250px;padding:8px;border-radius:14px;
+  background:var(--sheet);border:1px solid var(--line);
+  box-shadow:0 18px 44px rgba(0,0,0,.34);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  display:flex;flex-direction:column;gap:2px}
+.menu-panel[hidden]{display:none}
+.menu-item{display:block;width:100%;text-align:start;cursor:pointer;
+  padding:11px 13px;border:0;border-radius:9px;background:transparent;
+  color:var(--paper);font:inherit;font-size:.92rem;line-height:1.3;
+  transition:background .15s}
+.menu-item:hover,.menu-item:focus-visible{background:var(--chip);outline:none}
+.menu-item:focus-visible{box-shadow:inset 0 0 0 2px var(--gold)}
+.menu-item small{display:block;margin-top:3px;font-size:.74rem;color:var(--dimmer)}
+
+/* --- hero ---------------------------------------------------------------- */
+.hero{padding-block:7vh 10vh}
+.kicker{font-size:.72rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-ink);margin:0 0 20px}
+/* 3.5rem is a hard fallback: if --hero ever fails to resolve, an invalid
+   font-size makes the heading inherit and the layout goes strange. The
+   wrapping rules stop a long word pushing the page wider than the viewport. */
+.hero h1{margin:0;font-size:3.5rem;font-size:var(--hero,3.5rem);
+  line-height:1.02;letter-spacing:-.04em;font-weight:800;
+  max-width:19ch;overflow-wrap:break-word;hyphens:auto}
+.hero h1 .dot{color:var(--gold-ink)}
+.lede{margin:26px 0 0;max-width:50ch;color:var(--dim);font-size:1.08rem}
+.trust{display:inline-flex;align-items:center;gap:10px;margin-top:30px;padding:9px 18px 9px 14px;
+  border:1px solid var(--line);border-radius:var(--pill);font-size:.84rem;color:var(--paper);
+  background:var(--chip);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.trust i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(74,222,155,.18);
+  animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 7px rgba(74,222,155,0)}}
+.ticker{margin-top:36px;padding-top:18px;border-top:1px solid var(--line);
+  display:flex;gap:12px;align-items:center;font-size:.8rem;color:var(--dimmer);flex-wrap:wrap}
+.ticker .lbl{letter-spacing:.18em;text-transform:uppercase;font-size:.64rem}
+.ticker b{color:var(--gold-ink);font-weight:600;transition:opacity .4s var(--ease)}
+
+/* --- sections ------------------------------------------------------------ */
+main{padding-bottom:14vh}
+.sec{margin-bottom:60px}
+.sec-head{display:flex;align-items:baseline;gap:16px;margin:0 0 26px}
+.sec-num{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;font-weight:700;color:var(--gold-ink);flex:none}
+.sec-title{margin:0;font-size:var(--h2);font-weight:800;letter-spacing:-.035em;line-height:1.08}
+.rule{flex:1;height:1px;background:var(--line);align-self:center}
+
+/* --- language rows ------------------------------------------------------- */
+.langs{border-top:1px solid var(--line)}
+.lang{display:flex;align-items:center;gap:20px;width:100%;text-align:start;font:inherit;color:var(--paper);
+  padding:19px 10px;background:none;border:0;border-bottom:1px solid var(--line);cursor:pointer;
+  position:relative;transition:padding-inline-start .3s var(--ease),background .2s}
+.lang::before{content:"";position:absolute;inset-block:0;inset-inline-start:0;width:2px;background:var(--gold);
+  transform:scaleY(0);transition:transform .3s var(--ease);box-shadow:0 0 12px rgba(245,166,35,.8)}
+.lang:hover{background:rgba(148,175,214,.05);padding-inline-start:22px}
+.lang:hover::before{transform:scaleY(1)}
+.lang:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.lang-n{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.76rem;color:var(--dimmer);width:2.3em;flex:none}
+.lang-name{font-size:1.22rem;font-weight:700;letter-spacing:-.025em;flex:none}
+.lang-note{margin-inline-start:auto;font-size:.78rem;color:var(--dimmer);text-align:end}
+.lang-go{flex:none;color:var(--gold-ink);opacity:0;transition:opacity .2s,transform .3s var(--ease)}
+.lang:hover .lang-go{opacity:1;transform:translateX(5px)}
+/* The three numbered steps are one sequence; a chevron between them says so
+   without adding a word to translate. Drawn on the item's leading edge, in
+   the gutter the number sits in, so it reads as a chain down the list. */
+#taskList .lang:not(:first-of-type)::after{content:"";position:absolute;
+  inset-inline-start:12px;top:-7px;width:6px;height:6px;border-inline-end:1.5px solid var(--line);
+  border-block-end:1.5px solid var(--line);transform:rotate(45deg)}
+/* Except the resume item, which is an alternative rather than a next step. */
+#taskList .lang-sep + .lang::after{display:none}
+.lang-sep{margin:0;padding:22px 10px 8px;font-size:.76rem;color:var(--dimmer);
+  border-block-start:1px solid var(--line);letter-spacing:.04em}
+.lang[aria-disabled="true"]{cursor:help}
+.lang[aria-disabled="true"] .lang-name{color:var(--dimmer);font-weight:600}
+.lang[aria-disabled="true"]:hover::before{background:var(--dimmer);box-shadow:none}
+
+/* --- glass cards --------------------------------------------------------- */
+.card{border:1px solid var(--line);border-radius:16px;padding:28px;margin-bottom:20px;
+  background:var(--glass);backdrop-filter:blur(14px) saturate(130%);-webkit-backdrop-filter:blur(14px) saturate(130%)}
+label{display:block;margin:0 0 8px;font-weight:650;font-size:.92rem;color:var(--paper)}
+.field{margin-bottom:20px}.field:last-child{margin-bottom:0}
+.hint{display:block;font-weight:400;color:var(--dimmer);font-size:.83rem;margin-top:3px}
+/* select is in here with input and textarea. It was not, so the two
+   language pickers rendered as native white dropdowns in the middle of a
+   dark form — the only controls on the page not wearing Willa's own
+   styling, and the first thing a claimant sees on the claim screen. */
+input,textarea,select{width:100%;padding:14px 16px;font:inherit;color:var(--paper);
+  background:var(--input);border:1.5px solid var(--line);border-radius:11px;
+  transition:border-color .18s,box-shadow .18s,background .18s}
+/* The native arrow is drawn by the OS and is near-invisible on this
+   background, so the control is unstyled and a chevron is drawn instead.
+   Inline SVG rather than a file: the front end makes no external requests. */
+select{appearance:none;-webkit-appearance:none;padding-right:44px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%238FA9C8' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 16px center;
+  background-size:12px 8px}
+input::placeholder,textarea::placeholder{color:var(--dimmer)}
+input:hover,textarea:hover,select:hover{border-color:rgba(148,175,214,.32)}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--gold);
+  background-color:var(--input-hi);box-shadow:0 0 0 4px var(--sel)}
+/* The dropdown list itself is painted by the OS, not by this stylesheet.
+   Without these two the open list is white text on white in dark mode. */
+select option{background:var(--input);color:var(--paper)}
+textarea{min-height:170px;resize:vertical}
+input[type=date]{color-scheme:var(--scheme)}
+/* Two-column rows, with the label band and the control band aligned across
+   both columns. */
+.row{display:grid;grid-template-columns:1fr 1fr;gap:20px;
+  grid-template-rows:auto auto;align-items:start}
+.row > .field{display:grid;grid-template-rows:subgrid;grid-row:span 2;
+  margin-bottom:0}
+@supports not (grid-template-rows:subgrid){
+  /* Without subgrid the label heights cannot be shared, so equalise the
+     bottom margin and accept that a wrapped hint still shifts its own
+     column. Better than the 20px offset on every row. */
+  .row{grid-template-rows:none}
+  .row > .field{display:block;margin-bottom:0}
+}
+@media(max-width:600px){.row{grid-template-columns:1fr;grid-template-rows:none}
+  .row > .field{display:block;grid-row:auto;margin-bottom:20px}
+  .row > .field:last-child{margin-bottom:0}}
+
+/* --- buttons ------------------------------------------------------------- */
+button.btn{display:inline-flex;align-items:center;gap:.6em;font:inherit;font-weight:700;
+  padding:15px 30px;min-height:54px;border-radius:var(--pill);cursor:pointer;border:1.5px solid transparent;
+  transition:background .2s,border-color .2s,transform .14s var(--ease),box-shadow .2s}
+button.btn:active{transform:translateY(1px)}
+button.btn:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+.btn-gold{background:var(--gold);color:#0b192c;box-shadow:0 8px 30px rgba(245,166,35,.3)}
+.btn-gold:hover:not(:disabled){background:var(--gold-hi);transform:translateY(-2px);box-shadow:0 14px 40px rgba(245,166,35,.4)}
+.btn-gold:disabled{opacity:.6;cursor:progress;box-shadow:none;transform:none}
+.btn-ghost{background:transparent;color:var(--paper);border-color:var(--line)}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold-ink)}
+.actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:28px}
+
+/* --- panels -------------------------------------------------------------- */
+.panel{border:1px solid var(--line);border-inline-start:3px solid var(--dimmer);border-radius:12px;
+  padding:18px 22px;margin-bottom:18px;background:var(--glass);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.panel h3{margin:0 0 9px;font-size:.97rem;font-weight:750}
+.panel p{margin:8px 0 0;color:var(--dim)}
+.panel.alert{border-inline-start-color:var(--danger);background:var(--danger-bg);border-color:var(--danger-line)}
+.theme-btn-landing{position:fixed;top:22px;inset-inline-end:24px;z-index:30}
+@media(max-width:600px){.theme-btn-landing{top:14px;inset-inline-end:16px}}
+
+.err-bar{position:fixed;z-index:60;inset-inline:0;top:0;margin:14px auto;max-width:min(720px,calc(100vw - 28px));
+  background:var(--sheet);border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.34);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.err-bar .panel{position:relative;padding-inline-end:44px}
+.err-x{position:absolute;top:8px;inset-inline-end:10px;width:28px;height:28px;
+  display:grid;place-items:center;cursor:pointer;font-size:1.3rem;line-height:1;
+  background:transparent;border:0;color:var(--dim);border-radius:50%}
+.err-x:hover{color:var(--paper);background:var(--chip)}
+.panel.alert h3{color:var(--danger)}
+.panel.notice{border-inline-start-color:var(--gold)}
+.panel.notice h3{color:var(--gold-ink)}
+ul.issues{margin:9px 0 0;padding-inline-start:20px;color:var(--paper)}
+ul.issues li{margin-bottom:7px}
+code{background:rgba(148,175,214,.14);padding:1px 6px;border-radius:5px;font-size:.88em}
+
+/* --- letter -------------------------------------------------------------- */
+.letter{white-space:pre-wrap;width:100%;font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  font-size:.875rem;line-height:1.8;border:1.5px solid var(--line);border-radius:14px;padding:26px;
+  min-height:380px;background:var(--sheet);color:var(--paper)}
+.letter:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 4px var(--sel)}
+.sources{font-size:.83rem;color:var(--dim)}
+.sources b{color:var(--paper)}
+
+footer{border-top:1px solid var(--line);padding-block:34px;color:var(--dimmer);font-size:.85rem}
+footer b{color:var(--paper);display:block;margin-bottom:7px}
+
+
+/* --- landing portal -------------------------------------------------------
+   Sparse by intent. Someone arriving here may be worried about money and
+   may not read well, so the page carries one object, three short lines,
+   and a way to hear them. */
+/* One centred column: orb, then the words beneath it. A flex stack rather
+   than absolute positioning — with everything in normal flow the orb
+   cannot overlap the copy by construction, and the whole composition stays
+   centred as a unit however the rotating line reflows. */
+#landing{position:fixed;inset:0;z-index:5;background:transparent;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:clamp(18px,3vh,34px);padding:4vh clamp(24px,6vw,64px);
+  overflow-y:auto;text-align:center;
+  --copy-space:clamp(230px,32vh,320px)}
+#landing.gone{display:none}
+
+/* Notice ticker along the bottom. Cached statutory notices, not a live feed —
+   see scripts/fetch_notices.py for why. */
+/* Its own band at the foot of the screen, deliberately apart from the copy —
+   statutory notices are a different kind of information from the mission and
+   should not read as part of it. */
+.ticker-bar{position:absolute;inset-inline:0;bottom:0;overflow:hidden;
+  padding:12px 0;border-top:1px solid var(--line);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.ticker-track{display:inline-flex;white-space:nowrap;will-change:transform;
+  animation:marquee 48s linear infinite}
+.ticker-bar:hover .ticker-track{animation-play-state:paused}
+.ticker-item{font-size:.76rem;color:var(--dimmer);padding-inline:26px;
+  letter-spacing:.02em}
+.ticker-item::after{content:"·";margin-inline-start:26px;color:var(--gold-ink);opacity:.6}
+.ticker-stamp{color:var(--gold-ink);opacity:.8}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){.ticker-track{animation:none}}
+@media print{.ticker-bar{display:none}}
+/* The landing is a screen, not an overlay. While it is up the app beneath is
+   removed from flow — otherwise it scrolls behind and the two pages stack. */
+body.landing-open{overflow:hidden}
+body.landing-open .stack{display:none}
+
+.portal{position:relative;flex:none;
+  /* Capped against the space the copy needs, so on a short viewport the orb
+     shrinks rather than pushing the words off screen. */
+  width:min(72vw,600px,calc(100vh - var(--copy-space)));aspect-ratio:1;
+  border-radius:50%;cursor:pointer;background:none;border:0;padding:0;
+  display:grid;place-items:center;transition:transform .4s var(--ease)}
+.portal:hover{transform:scale(1.02)}
+.portal:active{transform:scale(.99)}
+.portal:focus-visible{outline:3px solid var(--gold);outline-offset:10px}
+/* The canvas is the whole viewport, not the button. The swarm has no edge,
+   so any box drawn around it crops the dissolve, and a dissolve that stops
+   at a straight line is an edge again. */
+#orb{position:fixed;inset:0;width:100vw;height:100vh;
+  display:block;pointer-events:none;z-index:-1}
+.portal-key{position:relative;z-index:2;pointer-events:none;font-size:clamp(78px,10.8vw,132px)}
+
+.landing-copy{display:flex;flex-direction:column;align-items:center;
+  gap:12px;max-width:min(52ch,92vw);flex:none}
+
+/* Height reserved so the brand line below never jumps as points swap. */
+.hero-points{position:relative;min-height:3em;width:100%;max-width:38ch;margin-top:2px}
+.hero-point{position:absolute;inset:0;margin:0;
+  font-size:clamp(.86rem,1.5vw,1rem);line-height:1.45;color:var(--dim);
+  opacity:0;transform:translateY(8px);
+  transition:opacity .6s var(--ease),transform .6s var(--ease)}
+.hero-point.on{opacity:1;transform:none}
+
+/* Pinned to the corner rather than sitting in the column: it is a brand mark,
+   not part of the reading order that leads to the button. */
+
+/* One line at every width. 57 characters of letterspaced uppercase is wide,
+   so the tracking scales down with the font rather than staying fixed —
+   holding .17em on a phone would force either a wrap or an unreadable size. */
+/* One line at every width. 57 characters of letterspaced uppercase is wide, so
+   below 520px the tracking collapses to almost nothing — that buys back enough
+   room to keep the font legible instead of shrinking it to 7px. */
+.hero-kicker{margin:0;font-weight:600;text-transform:uppercase;color:#7fb6e8;
+  font-size:clamp(.58rem,1.55vw,.76rem);
+  letter-spacing:.17em;
+  white-space:nowrap}
+@media(max-width:520px){
+  .hero-kicker{font-size:.54rem;letter-spacing:.03em}
+}
+
+
+@media(max-width:760px){
+  #landing{--copy-space:clamp(250px,40vh,340px);gap:clamp(14px,2.4vh,24px)}
+  .portal{width:min(80vw,340px,calc(100vh - var(--copy-space)))}
+  .hero-points{min-height:3.6em}
+}
+.landing-note{font-size:.82rem;color:var(--dimmer);max-width:38ch;text-align:center;min-height:1.2em}
+@media print{#landing{display:none !important}}
+
+/* --- print / save as PDF --------------------------------------------------
+   No PDF library. fpdf2 and reportlab both default to Latin-1 core fonts,
+   which means bundling a Unicode TTF or watching Tshivenḓa's ḓ and
+   Sepedi's š turn into mojibake inside a legal document. */
+#printable{display:none}
+@media print{
+  #sky,.veil,.nav,.hero,#stepLang,#stepForm,#explainBox,#issueBox,
+  #sourceBox,.actions,footer,#mtBanner,#letterOut,.sec-head,#stepReview .hint,
+  #stepDeliver,#stepSummons,#stepSave{
+    display:none !important;
+  }
+  html,body{background:#fff !important;color:#000 !important}
+  .shell{max-width:none;padding:0}
+  main{padding:0}
+  #printable{
+    display:block;white-space:pre-wrap;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:10.5pt;line-height:1.6;color:#000;
+  }
+  #printFoot{
+    display:block;margin-top:18mm;padding-top:4mm;border-top:.4pt solid #999;
+    font-family:-apple-system,"Segoe UI",Roboto,sans-serif;font-size:7.5pt;color:#444;
+  }
+  @page{size:A4;margin:18mm 16mm}
+}
+#printFoot{display:none}
+
+.hidden{display:none}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid currentColor;
+  border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms!important;transition-duration:.001ms!important}
+}
+</style>
+</head>
+<body>
+
+<canvas id="sky" aria-hidden="true"></canvas>
+<div class="veil" aria-hidden="true"></div>
+<div id="landing">
+
+  <!-- The theme toggle has to be duplicated here, not moved.
+
+       The one in the header lives inside .stack, and body.landing-open sets
+       .stack { display:none } — so on the landing screen there was no way to
+       switch theme at all. Both buttons call the same handler and read the
+       same stored preference, so they cannot disagree. -->
+  <button class="theme-btn theme-btn-landing" id="themeBtnLanding" type="button"
+          aria-label="Switch between light and dark">
+    <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+  </button>
+
+  <!-- The orb canvas is a SIBLING of the button, not a child.
+
+       .portal:hover applies transform:scale(1.02), and a transformed element
+       becomes the containing block for position:fixed descendants — so as a
+       child, the full-screen canvas would snap back to the button's box the
+       moment the pointer touched it, and spring out again on leave. Nothing
+       about the markup suggests that; it is a rule about transforms that only
+       bites once the canvas goes fixed. Kept outside, it is unaffected. -->
+  <canvas id="orb" aria-hidden="true"></canvas>
+
+  <button class="portal" id="portal" type="button" aria-label="Willa">
+    <span class="mark portal-key" aria-hidden="true">w<span class="keyhole"></span>lla</span>
+  </button>
+
+  <div class="landing-copy">
+    <p class="hero-kicker" data-s="hero_kicker">A privacy-first legal assistant for the Small Claims Court</p>
+
+    <div class="hero-points" id="heroPoints" aria-live="polite"></div>
+
+    <p class="landing-note" id="landingNote"></p>
+  </div>
+
+  <div class="ticker-bar" id="tickerBar" aria-label="Small Claims Court notices">
+    <div class="ticker-track" id="tickerTrack"></div>
+  </div>
+
+</div>
+
+<div class="stack">
+
+<!-- Always on screen. Deliberately not inside any section, because the step
+     machinery hides sections and errors used to be hidden with them. -->
+<div class="err-bar hidden" id="errBar" role="alert" aria-live="assertive"></div>
+
+<nav class="nav">
+  <div class="shell">
+    <div class="mark" aria-label="Willa">w<span class="keyhole" aria-hidden="true"></span>lla</div>
+    <div class="nav-tag">Permanent · Sovereign · Equal</div>
+    <button class="theme-btn" id="themeBtn" type="button" aria-label="Switch between light and dark">
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+
+    <div class="menu-wrap">
+      <button class="menu-btn" id="menuBtn" type="button"
+              aria-haspopup="true" aria-expanded="false" aria-controls="menuPanel"
+              aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <div class="menu-panel" id="menuPanel" role="menu" aria-labelledby="menuBtn" hidden>
+        <!-- The label spans for guide/faq/courts are placeholders. They are
+             replaced at load with each page's own title, as scraped — see
+             labelMenu(). What is written here is only what shows if the
+             cache has not been built yet. -->
+        <button class="menu-item" role="menuitem" type="button" data-page="about"><span class="mi-label">About Willa</span></button>
+        <button class="menu-item" role="menuitem" type="button" data-page="guide"><span class="mi-label">Guide to the Small Claims Court</span><small>How the process works, step by step</small></button>
+        <button class="menu-item" role="menuitem" type="button" data-page="faq"><span class="mi-label">Frequently asked questions</span><small>What you may claim, and what it costs</small></button>
+        <button class="menu-item" role="menuitem" type="button" data-page="courts"><span class="mi-label">Find your court</span><small>Small Claims Courts by province</small></button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Reference content, shown in place of the main flow. Everything here is
+     served from the local cache written by scripts/fetch_reference.py — see
+     that file for why it is not fetched live. -->
+<section class="shell hidden" id="refPage" tabindex="-1">
+  <button class="btn btn-ghost" id="refBack" type="button" style="margin-bottom:22px">← Back</button>
+  <div id="refBody"></div>
+</section>
+
+<header class="hero">
+  <div class="shell">
+    <p class="kicker">Small Claims Court · South Africa</p>
+    <h1 id="heroTitle">Write your letter of demand<span class="dot">.</span></h1>
+    <p class="lede" id="tagline">Help preparing a Small Claims Court letter of demand</p>
+    <span class="trust" id="localBadge"><i></i>Runs on this device. Nothing is sent anywhere.</span>
+    <div class="ticker"><span class="lbl">Built for</span><b id="tickerWord">English</b></div>
+  </div>
+</header>
+
+<main class="shell">
+
+  <div class="panel notice hidden" id="mtBanner" role="status" style="margin-bottom:26px"></div>
+
+  <section class="sec" id="stepLang">
+    <div class="sec-head"><span class="sec-num">01</span>
+      <h2 class="sec-title" data-s="choose_language">Choose your language</h2><span class="rule"></span></div>
+    <div class="langs" id="langGrid">
+      <p style="color:var(--dimmer);padding:20px 0" id="langLoading">Loading languages…</p>
+    </div>
+    <div class="panel hidden" id="langNote" role="status" style="margin-top:20px"></div>
+  </section>
+
+
+
+  <button class="btn btn-ghost hidden" id="backTasks" type="button"
+    style="padding:8px 18px;min-height:0;font-size:.85rem;margin-bottom:24px"
+    data-s="back_to_tasks">Back</button>
+
+  <!-- task chooser -->
+  <section class="sec hidden" id="stepTask">
+    <div class="sec-head"><span class="sec-num">→</span>
+      <h2 class="sec-title" data-s="task_title">What do you need today?</h2><span class="rule"></span></div>
+
+    <!-- Presented as one sequence rather than four choices.
+         s29(1)(a) makes the demand a precondition for the summons, rule 7(2)
+         makes proof of delivery a precondition for the clerk accepting it,
+         and the 14 days must expire in between. Four equal-looking buttons
+         invited a claimant to start at "Prepare for court" and arrive at the
+         clerk with nothing the clerk can act on. -->
+    <p class="hint" style="margin:-12px 0 22px;max-width:60ch" data-s="task_intro">
+      These are one claim in order, not three separate services. Each step needs
+      the one before it — the court will not take your claim without the letter,
+      and will not take the letter without proof you delivered it.</p>
+
+    <div class="langs" id="taskList">
+      <button class="lang" type="button" id="taskLetter">
+        <span class="lang-n">01</span>
+        <span class="lang-name" data-s="task_letter">Write a letter of demand</span>
+        <span class="lang-note" data-s="task_letter_hint">Start here. Nothing else can happen until this is sent.</span>
+        <span class="lang-go" aria-hidden="true">→</span>
+      </button>
+      <button class="lang" type="button" id="taskAffidavit">
+        <span class="lang-n">02</span>
+        <span class="lang-name" data-s="task_affidavit">Prove I delivered my letter</span>
+        <span class="lang-note" data-s="task_affidavit_hint">After you have posted or handed over the letter from step 01.</span>
+        <span class="lang-go" aria-hidden="true">→</span>
+      </button>
+      <button class="lang" type="button" id="taskCourt">
+        <span class="lang-n">03</span>
+        <span class="lang-name" data-s="task_court">Prepare for court</span>
+        <span class="lang-note" data-s="task_court_hint">After 14 days have passed since they received it, with no payment.</span>
+        <span class="lang-go" aria-hidden="true">→</span>
+      </button>
+      <p class="lang-sep" data-s="task_or">Or, if you have been here before</p>
+      <button class="lang" type="button" id="taskResume">
+        <span class="lang-n">↺</span>
+        <span class="lang-name" data-s="task_resume">Continue a saved claim</span>
+        <span class="lang-note" data-s="task_resume_hint">Load the file you saved last time.</span>
+        <span class="lang-go" aria-hidden="true">→</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- save / resume -->
+  <section class="sec" id="stepSave">
+    <div class="sec-head"><span class="sec-num">⬇</span>
+      <h2 class="sec-title" data-s="save_title">Save your claim to come back to</h2><span class="rule"></span></div>
+    <p class="hint" style="margin:-12px 0 20px" data-s="save_intro">Willa keeps nothing.</p>
+    <div class="card">
+      <div class="field">
+        <label for="savePass"><span data-s="save_pass">Password (optional)</span>
+          <span class="hint" data-s="save_pass_hint">If anyone else uses this device, set a password.</span></label>
+        <input id="savePass" type="password" autocomplete="new-password">
+      </div>
+      <div class="panel notice" style="margin-bottom:0">
+        <p style="margin:0" data-s="save_shared_warning">Anyone who finds this file can read your claim unless you set a password.</p>
+      </div>
+      <div class="actions">
+        <button class="btn btn-gold" id="saveBtn" type="button" data-s="save_file">Save my claim to a file</button>
+        <button class="btn btn-ghost" id="loadBtn" type="button" data-s="load_file">Load a saved claim</button>
+        <input type="file" id="loadInput" accept=".willa,application/json" class="hidden">
+      </div>
+      <div class="panel hidden" id="saveNote" role="status" style="margin:18px 0 0"></div>
+
+      <!-- Only rendered when the store is switched on. Hidden entirely when
+           it is off, rather than shown disabled: a greyed-out button invites
+           someone to go looking for why, and the honest answer is that this
+           build deliberately does not keep your data. -->
+      <div class="hidden" id="storeBox" style="margin-top:26px">
+        <div class="panel alert" style="margin:0 0 18px">
+          <h3>This device is keeping your claims</h3>
+          <p id="storeWarn">Saving here writes your claim to this computer in plain text — names, addresses, ID numbers and all. Anyone who can read the file, a backup of it, or a copy of this disk can read every claim. Nothing is sent anywhere.</p>
+        </div>
+        <div class="actions">
+          <button class="btn btn-gold" id="storeSaveBtn" type="button">Save to this device</button>
+          <button class="btn btn-ghost" id="storeListBtn" type="button">Open a saved claim</button>
+        </div>
+        <div class="hidden" id="storeList" style="margin-top:18px"></div>
+        <p class="hint" id="storeChain" style="margin-top:14px"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec hidden" id="stepForm">
+    <div class="panel notice hidden" id="formIntro">
+      <p style="margin:0" data-s="court_needs_claim">The court form needs your claim details, including what happened.</p>
+    </div>
+
+    <!-- Write in one language, produce the letter in another. All official
+         languages may be used in a Small Claims Court, so these are genuinely
+         independent choices rather than one setting shown twice. -->
+    <div class="card">
+      <div class="sec-head"><span class="sec-num">01</span>
+        <h2 class="sec-title">Languages</h2><span class="rule"></span></div>
+      <div class="row">
+        <div class="field">
+          <label for="langIn">Write in
+            <span class="hint">The language you tell Willa what happened in.</span></label>
+          <select id="langIn"></select>
+        </div>
+        <div class="field">
+          <label for="langOut">Produce the letter in
+            <span class="hint">English is the court's language of record.</span></label>
+          <select id="langOut"></select>
+        </div>
+      </div>
+      <p class="hint hidden" id="langPairNote" style="margin:4px 0 0"></p>
+    </div>
+
+    <div class="card">
+      <div class="sec-head"><span class="sec-num">02</span>
+        <h2 class="sec-title" data-s="step_your_details">Your details</h2><span class="rule"></span></div>
+      <!-- Said here rather than only at refusal time. s7(1) is the rule most
+           likely to stop a claimant, and the moment to learn it is while
+           typing the name, not after filling in the whole form. -->
+      <p class="hint" style="margin:-6px 0 16px" data-s="natural_person_only">
+        Your own name, as a person. Only a natural person may bring a claim in
+        the Small Claims Court — a business, close corporation or trust can be
+        sued here but cannot sue (s7(1)).</p>
+      <div class="row">
+        <div class="field"><label for="your_name" data-s="your_name">First name</label><input id="your_name" autocomplete="given-name"></div>
+        <div class="field"><label for="your_surname" data-s="your_surname">Surname</label><input id="your_surname" autocomplete="family-name"></div>
+      </div>
+      <div class="field"><label for="your_address" data-s="your_address">Your address</label><input id="your_address" autocomplete="street-address"></div>
+      <div class="field"><label for="your_email" data-s="your_email">Your email (optional)</label><input id="your_email" type="email" autocomplete="email"></div>
+    </div>
+
+    <div class="card">
+      <div class="sec-head"><span class="sec-num">03</span>
+        <h2 class="sec-title" data-s="step_other_party">The other party</h2><span class="rule"></span></div>
+      <div class="row">
+        <div class="field"><label for="other_name" data-s="other_name">Their name or business name</label><input id="other_name"></div>
+        <div class="field"><label for="other_surname" data-s="other_surname">Their surname (if a person)</label><input id="other_surname"></div>
+      </div>
+      <div class="field"><label for="other_address" data-s="other_address">Their address</label><input id="other_address"></div>
+      <div class="field"><label for="other_email" data-s="other_email">Their email (if you know it)</label><input id="other_email" type="email"></div>
+    </div>
+
+    <div class="card">
+      <div class="sec-head"><span class="sec-num">04</span>
+        <h2 class="sec-title" data-s="step_claim">Your claim</h2><span class="rule"></span></div>
+      <div class="field"><label for="amount" data-s="amount">Amount claimed (Rand)</label><input id="amount" inputmode="decimal"></div>
+      <div class="row">
+        <div class="field"><label for="agreement_date"><span data-s="agreement_date">Date of the purchase or agreement</span>
+          <span class="hint" data-s="agreement_date_hint">When you paid, signed, or agreed.</span></label>
+          <input id="agreement_date" type="date"></div>
+        <div class="field"><label for="failure_date"><span data-s="failure_date">Date it went wrong</span>
+          <span class="hint" data-s="failure_date_hint">When the goods failed or payment fell due.</span></label>
+          <input id="failure_date" type="date"></div>
+      </div>
+      <div class="field"><label for="claim_basis"><span data-s="claim_basis">What happened?</span>
+        <span class="hint" data-s="claim_basis_hint">Explain in your own words.</span></label>
+        <textarea id="claim_basis"></textarea></div>
+    </div>
+
+    <div class="panel alert hidden" id="formError" role="alert"></div>
+    <div class="actions">
+      <button class="btn btn-gold" id="generateBtn" type="button" data-s="generate">Prepare my letter</button>
+      <button class="btn btn-ghost" id="backBtn" type="button">Change language</button>
+    </div>
+  </section>
+
+
+  <!-- 06 proof of delivery -->
+  <section class="sec hidden" id="stepDeliver">
+    <div class="sec-head"><span class="sec-num">06</span>
+      <h2 class="sec-title" data-s="delivery_title">Prove you delivered it</h2><span class="rule"></span></div>
+    <p class="hint" style="margin:-12px 0 20px" data-s="delivery_intro">Before you can issue a summons, you must prove the other side received this letter.</p>
+
+    <div class="card">
+      <div class="lang" style="border-bottom:1px solid var(--line)">
+        <input type="radio" name="dmethod" id="dm_post" value="post" checked style="width:auto;flex:none;margin:0">
+        <label for="dm_post" style="margin:0;cursor:pointer">
+          <span data-s="delivery_post">By registered post</span>
+          <span class="hint" data-s="delivery_post_hint">The post office receipt is your proof.</span></label>
+      </div>
+      <div class="lang" style="border-bottom:1px solid var(--line)">
+        <input type="radio" name="dmethod" id="dm_personal" value="personal" style="width:auto;flex:none;margin:0">
+        <label for="dm_personal" style="margin:0;cursor:pointer">
+          <span data-s="delivery_personal">By hand, myself</span>
+          <span class="hint" data-s="delivery_personal_hint">You will need a sworn affidavit.</span></label>
+      </div>
+      <div class="lang" style="border-bottom:0">
+        <input type="radio" name="dmethod" id="dm_other" value="other" style="width:auto;flex:none;margin:0">
+        <label for="dm_other" style="margin:0;cursor:pointer">
+          <span data-s="delivery_other">Some other way</span>
+          <span class="hint" data-s="delivery_other_hint">You will need a sworn affidavit explaining how.</span></label>
+      </div>
+    </div>
+
+    <div class="panel notice" id="deliveryGuide"></div>
+
+    <div class="card hidden" id="affidavitForm">
+      <p class="hint" id="affWhoNote" style="margin:0 0 18px" data-s="your_details_for_affidavit">The affidavit needs your details.</p>
+      <div class="row">
+        <div class="field"><label for="aff_first" data-s="your_name">First name</label><input id="aff_first" autocomplete="given-name"></div>
+        <div class="field"><label for="aff_surname" data-s="your_surname">Surname</label><input id="aff_surname" autocomplete="family-name"></div>
+      </div>
+      <div class="field"><label for="aff_address" data-s="your_address">Your address</label><input id="aff_address" autocomplete="street-address"></div>
+      <div class="row">
+        <div class="field"><label for="aff_id" data-s="id_number">Your ID or passport number</label><input id="aff_id" inputmode="numeric"></div>
+        <div class="field"><label for="aff_place" data-s="delivery_place">Where you delivered it</label><input id="aff_place"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="aff_date" data-s="delivery_date">Date you delivered it</label><input id="aff_date" type="date"></div>
+        <div class="field"><label for="aff_time" data-s="delivery_time">Time you delivered it</label><input id="aff_time" type="time"></div>
+      </div>
+      <div class="field"><label for="aff_recipient"><span data-s="recipient_name">Name of the person who took the letter</span>
+        <span class="hint" data-s="recipient_hint">If it was a shop, the name of whoever accepted it.</span></label>
+        <input id="aff_recipient"></div>
+      <div class="field hidden" id="otherMethodWrap">
+        <label for="aff_other" data-s="other_method">How did you deliver it?</label>
+        <textarea id="aff_other" style="min-height:90px"></textarea></div>
+      <div class="actions" style="margin-top:20px">
+        <button class="btn btn-gold" id="affidavitBtn" type="button" data-s="make_affidavit">Prepare the affidavit</button>
+      </div>
+    </div>
+
+    <div class="hidden" id="affidavitOut">
+      <h3 style="font-size:1.05rem;margin:24px 0 12px" data-s="affidavit_title">Affidavit (Form 5)</h3>
+      <div class="panel alert" id="affidavitWarn" role="alert"></div>
+      <textarea class="letter" id="affidavitText" spellcheck="false" aria-label="Affidavit, editable"></textarea>
+      <div class="actions">
+        <button class="btn btn-gold" id="affPrintBtn" type="button" data-s="save_pdf">Save as PDF</button>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- 07 summons preparation -->
+  <section class="sec hidden" id="stepSummons">
+    <div class="sec-head"><span class="sec-num">07</span>
+      <h2 class="sec-title" data-s="summons_title">If they do not pay</h2><span class="rule"></span></div>
+
+    <!-- What this page is for, before what it asks for.
+         "Prepare for court" is the step people arrive at with the least idea
+         of what is about to happen, and the one where a wrong expectation
+         costs a wasted trip to the courthouse. -->
+    <p class="hint" style="margin:-12px 0 20px;max-width:66ch" data-s="summons_intro">
+      Fourteen days have passed since they received your letter and they have
+      not paid or settled. You can now go to the clerk of the court and ask for
+      a summons. This page prepares what you will write on Form 1 when you get
+      there.</p>
+
+    <div class="panel notice">
+      <h3 style="margin:0 0 8px" data-s="summons_what_title">What you leave here with</h3>
+      <p style="margin:0 0 10px" data-s="summons_what">A preparation sheet — your
+        details, their details, and the Particulars of Claim. That last part is
+        the hard one: Form 1 requires it to be brief and in point form, with no
+        detailed history of the matter, and it is where most self-prepared
+        claims come unstuck.</p>
+      <p style="margin:0" data-s="summons_not_a_summons"><b>This is not a
+        summons.</b> Only the clerk can issue one — they check your papers, set
+        a hearing date, give the claim a case number and sign it. Willa cannot
+        do any of that. Take this sheet, your letter of demand and your proof of
+        delivery to the clerk, and they will issue the summons from it.</p>
+    </div>
+    <div class="card">
+      <div class="row">
+        <div class="field"><label for="your_phone" data-s="your_phone">Your phone number</label><input id="your_phone" inputmode="tel"></div>
+        <div class="field"><label for="other_phone" data-s="other_phone">Their phone number (if you know it)</label><input id="other_phone" inputmode="tel"></div>
+      </div>
+      <div class="field"><label for="admitted_debt"><span data-s="admitted_debt">Do you owe them anything? (Rand)</span>
+        <span class="hint" data-s="admitted_debt_hint">Leave blank if not.</span></label>
+        <input id="admitted_debt" inputmode="decimal"></div>
+      <div class="actions" style="margin-top:20px">
+        <button class="btn btn-gold" id="summonsBtn" type="button" data-s="make_summons">Prepare my Form 1 notes</button>
+      </div>
+    </div>
+    <div class="hidden" id="summonsOut">
+      <div id="summonsIssues"></div>
+      <textarea class="letter" id="summonsText" spellcheck="false" aria-label="Form 1 preparation notes, editable"></textarea>
+      <div class="actions">
+        <button class="btn btn-gold" id="sumPrintBtn" type="button" data-s="save_pdf">Save as PDF</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec hidden" id="stepReview">
+    <div class="sec-head"><span class="sec-num">05</span>
+      <h2 class="sec-title" data-s="review_title">Check this before you use it</h2><span class="rule"></span></div>
+    <p class="hint" style="margin:-12px 0 22px" data-s="review_hint">Read every line.</p>
+    <div id="explainBox"></div>
+    <div id="issueBox"></div>
+
+    <!-- Translated letter, shown ABOVE the English when one was requested.
+         Both are always produced; see the output-side comment in main.py for
+         why the English is never dropped. -->
+    <div class="hidden" id="translatedBox">
+      <p class="hint" id="translatedLabel" style="margin:0 0 8px"></p>
+      <textarea class="letter" id="letterTranslated" spellcheck="false" aria-label="Translated letter, editable"></textarea>
+      <p class="hint" style="margin:10px 0 22px" id="translatedWarn"></p>
+    </div>
+
+    <p class="hint hidden" id="englishLabel" style="margin:0 0 8px"></p>
+    <textarea class="letter" id="letterOut" spellcheck="false" aria-label="Draft letter, editable"></textarea>
+    <p class="hint" data-s="notice_days" style="margin-top:14px">The other party has 14 days to pay or settle.</p>
+    <div class="panel sources" id="sourceBox"></div>
+    <div class="actions">
+      <button class="btn btn-gold" id="printBtn" type="button" data-s="save_pdf">Save as PDF</button>
+      <button class="btn btn-ghost" id="downloadBtn" type="button" data-s="download">Download as text</button>
+      <button class="btn btn-ghost" id="restartBtn" type="button" data-s="start_over">Start over</button>
+    </div>
+    <div id="printable"></div>
+    <div id="printFoot"></div>
+  </section>
+</main>
+
+<footer><div class="shell"><b>Willa</b><span id="disclaimer">Willa is not a lawyer and this is not legal advice.</span></div></footer>
+</div>
+
+<script>
+"use strict";
+
+/* ========================================================================
+   === Constellation + comets. */
+/* Shared pulse. The background field and the orb are two separate
+   canvases, so left alone they drift independently and the page reads as
+   two unrelated animations. */
+const PULSE = { phase: 0, energy: 0 };
+
+/* One ink table, read by both canvases. The orb used to carry its own copy
+   of these numbers. */
+const INK_THEMES = {
+  dark:  { node:"226,238,255", link:"158,196,236", linkA:0.24, dotA:1.00, warm:"245,166,35" },
+  /* Light was handicapped twice over and it showed: dotA 0.8 dimmed every
+     dot by 20% before anything else touched it, and linkA 0.16 made the mesh
+     33% weaker than on dark. */
+  /* dotA above 1.0 is deliberate. It is an alpha multiplier, not an alpha —
+     dark ink on white simply cannot reach the contrast pale ink reaches on
+     navy at the same alpha, because the page is only so bright. */
+  light: { node:"11,25,44",    link:"30,60,100",   linkA:0.28, dotA:1.25, warm:"134,84,0" },
+};
+function willaInk(){
+  return INK_THEMES[document.documentElement.dataset.theme === "light" ? "light" : "dark"];
+}
+
+(function sky(){
+  const cv = document.getElementById("sky");
+  if(!cv || !cv.getContext) return;
+  const ctx = cv.getContext("2d", { alpha:true });
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W=0, H=0, dots=[], motes=[], comets=[], raf=0, dpr=1;
+
+  /* Link radius, not node count. Links grow with the area a node can reach,
+     so multiplying the radius by root-2 roughly doubles how many neighbours
+     each node connects to — without adding nodes, and therefore without
+     adding a single extra distance test to the O(n^2) pass. */
+  const LINK = 210;          // px within which two dots are joined
+  const MOTE_LEVELS = 6;     // alpha buckets; more looks smoother, costs state
+  let MOTE_STYLES = [];      // [cool0..coolN, warm0..warmN], rebuilt on theme
+  const rand = (a,b) => a + Math.random()*(b-a);
+
+  // Ink flips with the theme: pale nodes on navy, navy nodes on white.
+  let INK = willaInk();
+  function buildMoteStyles(){
+    MOTE_STYLES = [];
+    for(const warm of [false, true]){
+      for(let i=0;i<MOTE_LEVELS;i++){
+        const a = (0.06 + (i/(MOTE_LEVELS-1)) * 0.30).toFixed(3);
+        MOTE_STYLES.push(`rgba(${warm ? INK.warm : INK.node},${a})`);
+      }
+    }
+  }
+
+  function readTheme(){ INK = willaInk(); }
+  readTheme();
+  buildMoteStyles();
+  window.addEventListener("willa-theme", () => { readTheme(); buildMoteStyles(); if(still) draw(); });
+
+  /* Scroll steers the field. Wheel/scroll delta feeds an angular velocity
+     that rotates every node's direction vector, then decays back to drift —
+     so the network visibly swings as you move down the page and settles when
+     you stop. */
+  let spin = 0, lastY = window.scrollY;
+  addEventListener("scroll", () => {
+    const dy = window.scrollY - lastY;
+    lastY = window.scrollY;
+    spin += Math.max(-0.05, Math.min(0.05, dy * 0.00042));
+    spin = Math.max(-0.055, Math.min(0.055, spin));
+  }, { passive:true });
+
+  function resize(){
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Fall back to the viewport if the element somehow reports its intrinsic
+    // size — belt and braces against the replaced-element trap above.
+    W = cv.clientWidth  || window.innerWidth;
+    H = cv.clientHeight || window.innerHeight;
+    cv.width = Math.floor(W*dpr); cv.height = Math.floor(H*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    // ~1 dot per 8.5k px², so the network covers the whole field rather than
+    // thinning out. Still area-scaled, so a phone gets proportionally fewer.
+    // Linking is O(n²) — 150 is about where that stays comfortable at 60fps.
+    const n = Math.max(34, Math.min(150, Math.round((W*H)/8500)));
+    dots = Array.from({length:n}, () => ({
+      x:Math.random()*W, y:Math.random()*H,
+      vx:rand(-.14,.14), vy:rand(-.14,.14),
+      r:rand(.7,1.9), a:rand(.3,.85),
+      warm: Math.random() < .18          // a few gold ones among the white
+    }));
+
+    /* Motes bound to the network. Free dust drifts independently of everything
+       else, so at density it reads as noise laid over the page. */
+    /* Halved twice. /70 was dense enough to grey the field; /140 fixed that
+       but the field's dust and the orb's dust still read as one population, so
+       the orb had no figure-ground separation from its own background. */
+    const m = Math.max(1100, Math.min(4200, Math.round((W*H)/320)));
+    const raw = Array.from({length:m}, () => ({
+      host: Math.floor(Math.random()*dots.length),
+      ang: Math.random()*6.2832,
+      rad: rand(4, 150),
+      spin: rand(.0014,.0068) * (Math.random()<.5?-1:1),
+      px: Math.random() < .22 ? 2 : 1,
+      warm: Math.random() < .22,
+      lvl: Math.floor(rand(0, MOTE_LEVELS)),
+    }));
+    // Sorting by bucket lets the draw loop walk the array in one pass and
+    // change fillStyle only at bucket boundaries.
+    raw.sort((a,b) => (a.warm - b.warm) || (a.lvl - b.lvl));
+    motes = raw;
+  }
+
+  function spawnComet(){
+    const fromLeft = Math.random() < .5;
+    const speed = rand(3.4,6.2);
+    const ang = rand(.18,.42) * (fromLeft ? 1 : -1);
+    comets.push({
+      x: fromLeft ? -80 : W+80,
+      y: rand(-40, H*.72),
+      vx: (fromLeft ? 1 : -1) * speed,
+      vy: speed * ang * .55,
+      len: rand(90,190), life:1
+    });
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+
+    // links first, so dots sit on top
+    for(let i=0;i<dots.length;i++){
+      const a = dots[i];
+      for(let j=i+1;j<dots.length;j++){
+        const b = dots[j], dx=a.x-b.x, dy=a.y-b.y;
+        const d2 = dx*dx+dy*dy;
+        if(d2 > LINK*LINK) continue;
+        const t = 1 - Math.sqrt(d2)/LINK;
+        // Links brighten as the orb speaks — the pulse crosses the gap.
+        const lit = INK.linkA * (1 + PULSE.energy * 0.75);
+        ctx.strokeStyle = `rgba(${INK.link},${(t*lit).toFixed(3)})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+      }
+    }
+    for(const d of dots){
+      ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,6.2832);
+      const glow = 1 + PULSE.energy * 0.5;
+      ctx.fillStyle = d.warm
+        ? `rgba(245,166,35,${Math.min(1, d.a*glow).toFixed(3)})`
+        : `rgba(${INK.node},${Math.min(1, d.a*INK.dotA*glow).toFixed(3)})`;
+      ctx.fill();
+    }
+    // Motes last of the static layers, so they float over the mesh. Drawn
+    // relative to their host node; the swarm widens as the orb speaks.
+    const swell = 1 + PULSE.energy * 0.55;
+    let bucket = -1;
+    for(let i=0;i<motes.length;i++){
+      const p = motes[i];
+      const h = dots[p.host];
+      if(!h) continue;
+      const b = (p.warm ? MOTE_LEVELS : 0) + p.lvl;
+      if(b !== bucket){ bucket = b; ctx.fillStyle = MOTE_STYLES[b]; }
+      const x = h.x + Math.cos(p.ang) * p.rad * swell;
+      const y = h.y + Math.sin(p.ang) * p.rad * swell * 0.9;
+      ctx.fillRect(x, y, p.px, p.px);
+    }
+
+    for(const c of comets){
+      const g = ctx.createLinearGradient(c.x,c.y,c.x-c.vx*(c.len/6),c.y-c.vy*(c.len/6));
+      g.addColorStop(0, `rgba(255,255,255,${.85*c.life})`);
+      g.addColorStop(.35, `rgba(245,166,35,${.35*c.life})`);
+      g.addColorStop(1, "rgba(245,166,35,0)");
+      ctx.strokeStyle = g; ctx.lineWidth = 2.1; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(c.x,c.y);
+      ctx.lineTo(c.x - c.vx*(c.len/6), c.y - c.vy*(c.len/6)); ctx.stroke();
+      ctx.beginPath(); ctx.arc(c.x,c.y,1.9,0,6.2832);
+      ctx.fillStyle = `rgba(255,245,225,${.95*c.life})`; ctx.fill();
+    }
+  }
+
+  function step(){
+    // Rotate every velocity vector by the current spin, then let spin decay
+    // back to zero so the field settles a moment after scrolling stops.
+    // A fraction of the orb's rotation is added, so the two move together.
+    const turn = spin + Math.sin(PULSE.phase) * 0.0016 * (1 + PULSE.energy);
+    const cos = Math.cos(turn), sin = Math.sin(turn);
+    const turning = Math.abs(turn) > 1e-6;
+    for(const d of dots){
+      if(turning){
+        const vx = d.vx*cos - d.vy*sin;
+        d.vy = d.vx*sin + d.vy*cos;
+        d.vx = vx;
+      }
+      d.x += d.vx; d.y += d.vy;
+      if(d.x < -20) d.x = W+20; else if(d.x > W+20) d.x = -20;
+      if(d.y < -20) d.y = H+20; else if(d.y > H+20) d.y = -20;
+    }
+    spin *= 0.94;
+    // Orbit speed carries the same turn the nodes and the orb are given, so
+    // all three layers accelerate together while speech plays.
+    const drive = 1 + PULSE.energy * 0.8;
+    const step2 = turn * 0.5;
+    for(let i=0;i<motes.length;i++){
+      const p = motes[i];
+      p.ang += p.spin * drive + step2;
+    }
+
+    for(let i=comets.length-1;i>=0;i--){
+      const c = comets[i];
+      c.x += c.vx; c.y += c.vy;
+      if(c.x < -300 || c.x > W+300 || c.y > H+220) comets.splice(i,1);
+    }
+    if(Math.random() < .0055 && comets.length < 3) spawnComet();
+    draw();
+    raf = requestAnimationFrame(step);
+  }
+
+  function start(){ if(!raf && !still) raf = requestAnimationFrame(step); }
+  function stop(){ cancelAnimationFrame(raf); raf = 0; }
+
+  let t;
+  addEventListener("resize", () => { clearTimeout(t); t = setTimeout(() => { resize(); draw(); }, 180); });
+  document.addEventListener("visibilitychange", () => document.hidden ? stop() : start());
+
+  resize();
+  if(still){ draw(); } else { setTimeout(spawnComet, 900); start(); }
+})();
+
+/* =========================================================================== */
+const $ = (id) => document.getElementById(id);
+let S = {}, LANG = "en";
+
+/* Theme toggle. The initial value is set in <head> before first paint; this
+   only handles switching. */
+function toggleTheme(){
+  const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+  document.documentElement.dataset.theme = next;
+  try{ localStorage.setItem("willa-theme", next); }catch(e){}
+  dispatchEvent(new Event("willa-theme"));   // both canvases repaint their ink
+}
+// Two buttons, one handler: the header one, and the landing one that exists
+// because .stack is hidden on that screen.
+$("themeBtn").onclick = toggleTheme;
+$("themeBtnLanding").onclick = (e) => {
+  // The landing listens for any pointerdown to start the intro speech and the
+  // orb enters the app on click; neither should fire from the theme button.
+  e.stopPropagation();
+  toggleTheme();
+};
+
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+
+/* --- nav menu ------------------------------------------------------------
+   A dropdown beside the theme toggle. Four destinations, none of which
+   leave the device — see the comment on /api/reference for why these are
+   cached pages rather than links to justice.gov.za. */
+const MENU = { btn: $("menuBtn"), panel: $("menuPanel") };
+
+function menuOpen(open){
+  MENU.panel.hidden = !open;
+  MENU.btn.setAttribute("aria-expanded", open ? "true" : "false");
+  if(open) MENU.panel.querySelector(".menu-item").focus();
+}
+
+MENU.btn.onclick = (e) => { e.stopPropagation(); menuOpen(MENU.panel.hidden); };
+
+// Click anywhere else closes it. Registered on document so it also catches
+// clicks on the canvases, which sit above most of the page.
+document.addEventListener("click", (e) => {
+  if(!MENU.panel.hidden && !MENU.panel.contains(e.target) && e.target !== MENU.btn)
+    menuOpen(false);
+});
+
+document.addEventListener("keydown", (e) => {
+  if(MENU.panel.hidden) return;
+  const items = [...MENU.panel.querySelectorAll(".menu-item")];
+  const i = items.indexOf(document.activeElement);
+  if(e.key === "Escape"){ menuOpen(false); MENU.btn.focus(); }
+  else if(e.key === "ArrowDown"){ e.preventDefault(); items[(i+1) % items.length].focus(); }
+  else if(e.key === "ArrowUp"){ e.preventDefault(); items[(i-1+items.length) % items.length].focus(); }
+});
+
+MENU.panel.querySelectorAll(".menu-item").forEach(b => {
+  b.onclick = () => { menuOpen(false); openReference(b.dataset.page); };
+});
+
+/* Menu labels come from the pages themselves. Each entry is named by
+   whatever that page's <title> currently says, so a re-scrape carries a
+   renamed page through to the navigation without anyone editing this file. */
+async function labelMenu(){
+  if(!REFERENCE){
+    try{ REFERENCE = await api("/api/reference"); }
+    catch(e){ return; }                       // keep the fallback wording
+  }
+  const secs = REFERENCE.sections || {};
+  MENU.panel.querySelectorAll(".menu-item[data-page]").forEach(b => {
+    const sec = secs[b.dataset.page];
+    const label = b.querySelector(".mi-label");
+    if(sec && sec.title && label) label.textContent = sec.title;
+  });
+}
+
+/* --- reference pages -----------------------------------------------------
+   About is written here. The other three are the department's own text,
+   cached to disk by scripts/fetch_reference.py and reproduced as published
+   with a source line and a retrieval date. */
+let REFERENCE = null;
+
+const ABOUT = {
+  title: "About Willa",
+  source: null,
+  blocks: [
+    { kind:"h",  text:"What Willa is" },
+    { kind:"p",  text:"Willa helps people prepare their own Small Claims Court papers in South Africa. It drafts a letter of demand, prepares the affidavit of delivery, and sets out what goes on the summons form." },
+    { kind:"h",  text:"Why it runs on your device" },
+    { kind:"p",  text:"Everything happens on this computer. Your name, the other side's name, what you are claiming and why — none of it is uploaded, and there is no account to create. A claim is often against someone close to you: a landlord, an employer, a neighbour. That is not information to put on someone else's server." },
+    { kind:"h",  text:"What Willa is not" },
+    { kind:"p",  text:"Willa is not a lawyer and does not give legal advice. It prepares documents from what you tell it, and it can be wrong. Read what it produces before you sign or send anything. The clerk of the Small Claims Court assists members of the public free of charge, and you do not need a lawyer in that court." },
+    { kind:"h",  text:"More to come" },
+    { kind:"p",  text:"This section will carry the team, the funding position and the review process once those are settled." },
+  ],
+};
+
+function referenceUnavailable(title){
+  return `<div class="panel notice"><h3>${escapeHtml(title)}</h3>` +
+    `<p>This section is served from a local snapshot, and the snapshot has not been created yet.</p>` +
+    `<p style="margin-top:10px">Run <code>python scripts/fetch_reference.py</code> once while online. After that it works offline like the rest of Willa.</p>` +
+    `<p class="hint" style="margin-top:12px">Willa does not fetch this at page load on purpose. A request to justice.gov.za from your device would tell that site, and every network in between, that you are preparing a claim.</p></div>`;
+}
+
+function renderReference(sec){
+  const out = [`<h2>${escapeHtml(sec.title)}</h2>`];
+  let list = null;
+  for(const b of sec.blocks){
+    if(b.kind === "li"){
+      if(!list) list = [];
+      list.push(`<li>${escapeHtml(b.text)}</li>`);
+      continue;
+    }
+    if(list){ out.push(`<ul class="issues">${list.join("")}</ul>`); list = null; }
+    out.push(b.kind === "h"
+      ? `<h3 style="margin-top:26px">${escapeHtml(b.text)}</h3>`
+      : `<p style="margin-top:12px">${escapeHtml(b.text)}</p>`);
+  }
+  if(list) out.push(`<ul class="issues">${list.join("")}</ul>`);
+
+  if(sec.source){
+    // The URL is shown as text, not as a link. Clicking it is the user's
+    // decision to make deliberately, not one a stray tap can make for them.
+    out.push(`<p class="hint" style="margin-top:30px">Reproduced from ${escapeHtml(sec.source)}` +
+      (REFERENCE && REFERENCE.fetched ? `, retrieved ${escapeHtml(REFERENCE.fetched)}` : "") +
+      `. Willa did not contact that site to show you this page.</p>`);
+  }
+  return out.join("");
+}
+
+async function openReference(page){
+  const body = $("refBody");
+
+  if(page === "about"){
+    body.innerHTML = renderReference(ABOUT);
+  } else {
+    if(!REFERENCE){
+      try{ REFERENCE = await api("/api/reference"); }
+      catch(e){ REFERENCE = { fetched:null, sections:{} }; }
+    }
+    const sec = REFERENCE.sections && REFERENCE.sections[page];
+    const titles = { guide:"Guide to the Small Claims Court",
+                     faq:"Frequently asked questions",
+                     courts:"Find your court" };
+    body.innerHTML = sec && sec.blocks && sec.blocks.length
+      ? renderReference(sec)
+      : referenceUnavailable(titles[page] || "Not available yet");
+  }
+
+  // The ticker bar is part of the landing screen, not this one, so it is not
+  // in this list — an earlier version included it and would have thrown on a
+  // selector that matches nothing only because forEach tolerates an empty
+  // NodeList. Hiding the hero and main is enough.
+  hideMain(true);
+  $("refPage").classList.remove("hidden");
+  $("refPage").focus();
+  scrollTo({ top:0, behavior:"smooth" });
+}
+
+function hideMain(hide){
+  document.querySelectorAll("header.hero, main.shell").forEach(
+    el => el.classList.toggle("hidden", hide));
+}
+
+$("refBack").onclick = () => {
+  $("refPage").classList.add("hidden");
+  hideMain(false);
+  scrollTo({ top:0, behavior:"smooth" });
+};
+
+/* The letter stays English because that is the court's language of record.
+   This panel is the part the user can actually read. It sits above the letter
+   deliberately — someone skimming should hit the explanation first. */
+function renderExplanation(data){
+  const box = $("explainBox");
+  box.innerHTML = "";
+  if(data.explanation_failed){
+    box.innerHTML = `<div class="panel notice"><h3>${escapeHtml(S.explain_title||"What this letter says")}</h3>` +
+      `<p>${escapeHtml(S.explain_unavailable||"")}</p>` +
+      `<p style="margin-top:10px">${escapeHtml(data.explanation_failed)}</p></div>`;
+    return;
+  }
+  if(!data.explanation) return;
+
+  const translated = data.explanation_language !== "en";
+  const p = document.createElement("div");
+  p.className = "panel notice";
+  p.innerHTML =
+    `<h3>${escapeHtml(S.explain_title||"What this letter says")}</h3>` +
+    `<p style="color:var(--paper)">${escapeHtml(data.explanation)}</p>` +
+    (translated
+      ? `<p class="hint" style="margin-top:12px">${escapeHtml(S.explain_note||"")}</p>` +
+        `<button class="btn btn-ghost" type="button" id="explainEnBtn" style="margin-top:12px;padding:9px 18px;min-height:0;font-size:.86rem">` +
+        `${escapeHtml(S.explain_show_en||"Show this in English")}</button>` +
+        `<p class="hint hidden" id="explainEn" style="margin-top:12px">${escapeHtml(data.explanation_en||"")}</p>`
+      : "");
+  box.appendChild(p);
+
+  const btn = $("explainEnBtn");
+  if(btn) btn.onclick = () => {
+    $("explainEn").classList.toggle("hidden");
+    btn.remove();
+  };
+}
+
+/* Errors go to a panel that is always on screen. The previous version
+   wrote them into #langNote, which lives inside the stepLang section — and
+   show() hides that section the moment a language is picked. */
+function fatal(msg, detail){
+  const load = $("langLoading"); if(load) load.remove();
+  const onFile = location.protocol === "file:";
+  const bar = $("errBar");
+  bar.innerHTML =
+    `<div class="panel alert" style="margin:0">` +
+    `<button class="err-x" type="button" aria-label="Dismiss">&times;</button>` +
+    `<h3>${escapeHtml(msg)}</h3><p>${escapeHtml(detail||"")}</p>` +
+    (onFile
+      ? `<p>This page was opened straight from disk (<code>file://</code>), so it has no server to talk to. Open <code>http://127.0.0.1:8000</code> instead.</p>`
+      : `<p>Is uvicorn still running? Check that terminal for a traceback.</p>`) +
+    `</div>`;
+  bar.classList.remove("hidden");
+  bar.querySelector(".err-x").onclick = () => bar.classList.add("hidden");
+  // Also to the console, so a stack trace survives dismissal.
+  console.error(msg, detail);
+}
+addEventListener("error", e => fatal("Interface error", e.message));
+addEventListener("unhandledrejection", e => fatal("Interface error", String(e.reason)));
+
+async function api(path, opts){
+  const r = await fetch(path, opts);
+  if(!r.ok){
+    let d = r.statusText;
+    try{ d = (await r.json()).detail || d; }catch{}
+    throw new Error(`${path} → ${r.status}: ${d}`);
+  }
+  return r.json();
+}
+
+function startTicker(names){
+  const el = $("tickerWord");
+  if(!el || names.length < 2) return;
+  let i = 0;
+  setInterval(() => {
+    el.style.opacity = 0;
+    setTimeout(() => { i = (i+1)%names.length; el.textContent = names[i]; el.style.opacity = 1; }, 400);
+  }, 2600);
+}
+
+async function boot(){
+  // Load the default language before anything reads S. renderPoints() builds
+  // its lines from S, and at first paint S was an empty object — the rotator
+  // rendered four blank paragraphs and looked like it had not been built.
+  try{ await loadStrings(LANG); applyStrings(); }catch(e){}
+  let languages;
+  try{ ({ languages } = await api("/api/languages")); }
+  catch(e){ fatal("Could not load languages", e.message); return; }
+
+  const load = $("langLoading"); if(load) load.remove();
+  const grid = $("langGrid");
+  languages.forEach((l, i) => {
+    const b = document.createElement("button");
+    b.className = "lang"; b.type = "button";
+    b.innerHTML =
+      `<span class="lang-n">${String(i+1).padStart(2,"0")}</span>` +
+      `<span class="lang-name">${escapeHtml(l.endonym)}</span>` +
+      `<span class="lang-note">${l.note ? escapeHtml(l.note) : ""}</span>` +
+      `<span class="lang-go" aria-hidden="true">→</span>`;
+    b.setAttribute("aria-label", `${l.name}${l.note ? ", "+l.note : ""}`);
+    if(l.draftable) b.onclick = () => pickLanguage(l.code);
+    else { b.onclick = () => showLangNote(l); b.setAttribute("aria-disabled","true"); }
+    grid.appendChild(b);
+  });
+  fillLanguagePickers(languages);
+  renderPoints();
+  if("speechSynthesis" in window) speechSynthesis.onvoiceschanged = () => {};
+  startTicker(languages.filter(l => l.status !== "nontext").map(l => l.endonym));
+  loadNotices();
+  labelMenu();
+  initStore();
+  checkHealth();
+  autoSpeak();
+  armAutoSpeak();
+}
+
+async function loadStrings(code){
+  const d = await api(`/api/strings/${code}`);
+  S = d.strings;
+  // Anyone reading unreviewed machine translation should be told so, in the
+  // language they chose. Given "plaintiff" currently round-trips as
+  // "defendant" in isiZulu, this is not a nicety.
+  const banner = $("mtBanner");
+  if(d.machine_translated){
+    banner.innerHTML = `<p style="margin:0">${escapeHtml(S.mt_banner||"")}</p>`;
+    banner.classList.remove("hidden");
+  } else {
+    banner.classList.add("hidden");
+  }
+  return d;
+}
+
+function applyStrings(){
+  $("localBadge").innerHTML = `<i></i>${escapeHtml(S.local_badge)}`;
+  $("disclaimer").textContent = S.disclaimer;
+  document.querySelectorAll("[data-s]").forEach(el => { const k = el.dataset.s; if(S[k]) el.textContent = S[k]; });
+  document.documentElement.lang = LANG;
+  /* Last, and through setHeading rather than by writing S.tagline directly. */
+  setHeading(HEADING_KEY);
+}
+
+async function showLangNote(l){
+  try{ await loadStrings("en"); }catch(e){ return fatal("Could not load text", e.message); }
+  let title = S.unsupported_title, body = S.unsupported_body;
+  if(l.status === "nontext") body = S.sasl_body;
+  else if(l.status === "mt"){ title = S.pending_title; body = S.pending_body; }
+  const box = $("langNote");
+  box.className = "panel notice"; box.classList.remove("hidden");
+  box.innerHTML = `<h3>${escapeHtml(l.endonym)} — ${escapeHtml(title)}</h3><p>${escapeHtml(body)}</p>`;
+  box.scrollIntoView({ block:"nearest", behavior:"smooth" });
+}
+
+async function pickLanguage(code){
+  LANG = code;
+  // The language they chose to read the interface in is the obvious default
+  // for the language they will write in. Still changeable on the form.
+  const li = $("langIn"); if(li) li.value = code;
+  try{ await loadStrings(code); }catch(e){ return fatal("Could not load text", e.message); }
+  applyStrings();
+  $("langNote").classList.add("hidden");
+  showTasks();
+}
+
+async function checkHealth(){
+  try{
+    const h = await api("/api/health");
+    if(h.ollama && h.index) return;
+    const box = $("langNote");
+    box.className = "panel alert"; box.classList.remove("hidden");
+    box.innerHTML = `<h3>Local stack not ready</h3><p>` +
+      (!h.ollama ? escapeHtml(h.detail || "Ollama is not responding.") : "") +
+      (!h.index ? " No search index — run <code>python scripts/ingest.py</code>." : "") + `</p>`;
+  }catch(e){}
+}
+
+const FIELDS = ["your_name","your_surname","your_address","your_email",
+                "other_name","other_surname","other_address","other_email",
+                "amount","agreement_date","failure_date","claim_basis"];
+
+$("generateBtn").onclick = async () => {
+  // One button, two jobs. In court mode the user never wanted a letter.
+  if(MODE === "court"){ return $("summonsBtn").click(); }
+  const btn = $("generateBtn"), err = $("formError");
+  err.classList.add("hidden");
+  const body = { language: LANG,
+                 input_language: $("langIn").value || LANG,
+                 output_language: $("langOut").value || "en" };
+  FIELDS.forEach(f => body[f] = $(f).value);
+
+  /* Mirrors app/checks.py:_REQUIRED. Checked here as well as on the server
+     so an incomplete form fails instantly instead of after a round trip, and
+     checked on the server as well as here because this list is a
+     convenience, not the rule — the API is reachable without this page. */
+  const REQUIRED = [
+    ["your_name",     "your first name"],
+    ["your_surname",  "your surname"],
+    ["your_address",  "your address"],
+    ["other_name",    "the other party's name or business name"],
+    ["other_address", "the other party's address"],
+    ["amount",        "the amount you are claiming"],
+    ["failure_date",  "the date it went wrong"],
+    ["claim_basis",   "what happened"],
+  ];
+  const missing = REQUIRED.filter(([f]) => !String(body[f] || "").trim());
+  if(missing.length){
+    const names = missing.map(([, label]) => label);
+    err.innerHTML =
+      `<h3>A few details are still missing</h3>` +
+      `<p>Willa needs ${escapeHtml(names.length === 1 ? names[0]
+          : names.slice(0, -1).join(", ") + " and " + names[names.length - 1])}.</p>` +
+      `<p class="hint">A letter of demand must name both parties, state the ` +
+      `amount, give the date the claim arose and say what happened ` +
+      `<em>(rule 7(1))</em>. E-mail addresses are optional — the demand is ` +
+      `delivered by registered post or by hand.</p>`;
+    err.classList.remove("hidden");
+    $(missing[0][0]).focus();
+    err.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span>${escapeHtml(S.generating || "Preparing…")}`;
+  try{
+    const data = await api("/api/draft",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    if(data.blocked){ renderRefusal(data); return; }
+    render(data);
+  }catch(e){ err.textContent = e.message; err.classList.remove("hidden"); }
+  finally{ btn.disabled = false; btn.textContent = S.generate || "Prepare my letter"; }
+};
+
+/* --- languages -----------------------------------------------------------
+   Two selectors, filled from /api/languages. Only languages Willa can
+   actually translate are offered; the rest would fail server-side after
+   the user had already waited through a two-minute draft. */
+let LANGS = [];
+
+function fillLanguagePickers(languages){
+  LANGS = languages;
+  const usable = languages.filter(l => l.draftable);
+  const opts = (sel, chosen) => {
+    sel.innerHTML = usable.map(l =>
+      `<option value="${escapeHtml(l.code)}"${l.code === chosen ? " selected" : ""}>` +
+      `${escapeHtml(l.endonym)}</option>`).join("");
+  };
+  opts($("langIn"), LANG);
+  opts($("langOut"), "en");
+  $("langIn").onchange = $("langOut").onchange = languagePairNote;
+  languagePairNote();
+}
+
+/* Say plainly what the chosen pair will do, before the user spends two
+   minutes waiting for it. The isiZulu example is not hypothetical — it is the
+   failure this build has actually observed. */
+function languagePairNote(){
+  const box = $("langPairNote");
+  const outCode = $("langOut").value;
+  if(outCode === "en"){ box.classList.add("hidden"); return; }
+  const out = LANGS.find(l => l.code === outCode);
+  box.className = "hint";
+  box.textContent =
+    `Your letter will be produced in ${out ? out.endonym : outCode} and in English, ` +
+    `one after the other. Willa's ${out ? out.endonym : outCode} is machine translation ` +
+    `that no first-language speaker has checked yet — it has been seen to swap legal ` +
+    `terms like "plaintiff" and "defendant". Keep the English with it; the clerk reads that.`;
+}
+
+/* No letter was written, because the Act does not allow this claim here. */
+function renderRefusal(data){
+  const err = $("formError");
+  const issues = data.issues || [];
+  err.innerHTML =
+    /* Not "cannot write this letter yet". "Yet" promises the block is
+       temporary, which is true of a missing amount and false of a divorce —
+       the Small Claims Court will never hear one. */
+    `<h3>Willa cannot write this letter</h3>` +
+    issues.map(i =>
+      `<p>${escapeHtml(i.issue)}` +
+      (i.where ? ` <em>(${escapeHtml(i.where)})</em>` : "") + `</p>` +
+      (i.remedy ? `<p class="hint">${escapeHtml(i.remedy)}</p>` : "")
+    ).join("") +
+    `<p class="hint">Nothing was sent anywhere, and nothing was saved. ` +
+    `Change the details above and try again.</p>`;
+  err.classList.remove("hidden");
+  err.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function render(data){
+  $("letterOut").value = data.letter;
+
+  /* Bilingual output. The translation goes on top because it is the one the
+     user asked for and can read; the English follows because it is the one
+     the court records in and the one that is definitely correct. */
+  const outLang = data.output_language && data.output_language !== "en"
+    ? (LANGS.find(l => l.code === data.output_language) || {}).endonym || data.output_language
+    : "";
+  const tBox = $("translatedBox");
+  if(data.letter_translated){
+    $("letterTranslated").value = data.letter_translated;
+    $("translatedLabel").textContent = `Your letter in ${outLang}`;
+    $("translatedWarn").textContent =
+      `Machine translation, not checked by a ${outLang} speaker. The English ` +
+      `version below is the one the court records in — send both.`;
+    $("englishLabel").textContent = "The same letter in English";
+    $("englishLabel").classList.remove("hidden");
+    tBox.classList.remove("hidden");
+  } else {
+    tBox.classList.add("hidden");
+    $("englishLabel").classList.add("hidden");
+  }
+
+  renderExplanation(data);
+  const box = $("issueBox"); box.innerHTML = "";
+  const issues = data.issues || [];
+  const serious = issues.filter(i => i.severity === "high");
+  const routine = issues.filter(i => i.severity !== "high");
+  const li = i => `<li>${escapeHtml(i.issue)}` + (i.where ? ` <em>(${escapeHtml(i.where)})</em>` : "") + `</li>`;
+
+  if(serious.length){
+    const p = document.createElement("div");
+    p.className = "panel alert"; p.setAttribute("role","alert");
+    p.innerHTML = `<h3>${serious.length===1?"Check this before you send":serious.length+" things to check before you send"}</h3>` +
+      `<ul class="issues">${serious.map(li).join("")}</ul>` +
+      `<p class="hint">Willa may be wrong about this. Read the letter and decide for yourself.</p>`;
+    box.appendChild(p);
+  }
+  if(routine.length){
+    const p = document.createElement("div");
+    p.className = "panel notice";
+    p.innerHTML = `<h3>Still to fill in</h3><ul class="issues">${routine.map(li).join("")}</ul>`;
+    box.appendChild(p);
+  }
+  $("sourceBox").innerHTML = `<b>${escapeHtml(S.sources_title || "Based on")}</b><br>` +
+    data.sources.map(s => `[${s.n}] ${escapeHtml(s.source)}` + (s.citation ? ", "+escapeHtml(s.citation) : "")).join("<br>");
+  /* Appended AFTER the issue panels, because render() clears #issueBox part
+     way through — putting this before the clear meant it was built, wiped,
+     and never seen. */
+  if(data.letter_translation_failed || data.input_translation_note){
+    const t = document.createElement("div");
+    t.className = "panel alert";
+    t.innerHTML = `<h3>About the translation</h3>` +
+      (data.letter_translation_failed ? `<p>${escapeHtml(data.letter_translation_failed)}</p>` : "") +
+      (data.input_translation_note ? `<p>${escapeHtml(data.input_translation_note)}</p>` : "");
+    $("issueBox").appendChild(t);
+  }
+
+  show("stepReview", "stepDeliver", "stepSummons", "stepSave");
+  refreshDelivery();
+}
+
+/* Copy whatever is currently in the editable letter into the print block, so
+   the user's own edits are what gets saved — not the model's first draft. */
+$("printBtn").onclick = () => {
+  $("printable").textContent = letterForExport();
+  $("printFoot").textContent = S.print_footer || "";
+  printAs(FILENAME.letter());
+};
+
+/* --- Form J994, proof of delivery ---------------------------------------
+   Rule 7(2) accepts either a registered post receipt or an affidavit.
+   Which one a person needs depends entirely on how they delivered the
+   letter, so the first thing asked is the method — sending someone to find
+   a Commissioner of Oaths they do not need is its own small harm. */
+function deliveryMethod(){
+  const el = document.querySelector('input[name="dmethod"]:checked');
+  return el ? el.value : "post";
+}
+
+async function refreshDelivery(){
+  const method = deliveryMethod();
+  $("otherMethodWrap").classList.toggle("hidden", method !== "other");
+  $("affidavitForm").classList.toggle("hidden", method === "post");
+  $("affidavitOut").classList.add("hidden");
+  if(method === "post"){
+    // No affidavit needed at all. Say so and stop.
+    try{
+      const r = await api("/api/affidavit", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ delivery_method: "post" }),
+      });
+      showGuide(r.guidance);
+    }catch(e){ /* advisory */ }
+  } else {
+    showGuide({
+      headline: method === "personal" ? S.delivery_personal : S.delivery_other,
+      body: S.affidavit_warning || "",
+    });
+  }
+}
+
+function showGuide(g){
+  if(!g) return;
+  $("deliveryGuide").innerHTML =
+    `<h3>${escapeHtml(g.headline||"")}</h3><p>${escapeHtml(g.body||"")}</p>`;
+}
+
+document.querySelectorAll('input[name="dmethod"]').forEach(
+  el => el.onchange = refreshDelivery);
+
+$("affidavitBtn").onclick = async () => {
+  const btn = $("affidavitBtn");
+  btn.disabled = true;
+  try{
+    const r = await api("/api/affidavit", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        plaintiff_full_name: [$("aff_first").value, $("aff_surname").value]
+                               .filter(Boolean).join(" "),
+        id_number: $("aff_id").value,
+        plaintiff_address: $("aff_address").value,
+        delivery_date: $("aff_date").value,
+        delivery_time: $("aff_time").value,
+        recipient_name: $("aff_recipient").value,
+        delivery_place: $("aff_place").value || $("other_address").value,
+        delivery_method: deliveryMethod(),
+        other_method: $("aff_other").value,
+      }),
+    });
+    $("affidavitText").value = r.document;
+    $("affidavitWarn").innerHTML =
+      `<h3>${escapeHtml(r.guidance.headline||"")}</h3>` +
+      `<p>${escapeHtml(r.guidance.body||"")}</p>` +
+      (r.missing && r.missing.length
+        ? `<p class="hint">Still to fill in: ${escapeHtml(r.missing.join(", "))}</p>` : "");
+    $("affidavitOut").classList.remove("hidden");
+    showGuide(r.guidance);
+  }catch(e){
+    showGuide({ headline: "Could not prepare the affidavit", body: e.message });
+  }finally{ btn.disabled = false; }
+};
+
+$("affPrintBtn").onclick = () => {
+  $("printable").textContent = $("affidavitText").value;
+  $("printFoot").textContent = S.print_footer || "";
+  printAs(FILENAME.affidavit());
+};
+
+/* --- Form 1 preparation --------------------------------------------------
+   Only the clerk issues a summons. This produces what a person writes onto
+   the official form, with the Particulars of Claim drafted to the form's
+   own instruction: brief, point form, no history. */
+$("summonsBtn").onclick = async () => {
+  const btn = $("summonsBtn");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span>${escapeHtml(S.making_summons || "Preparing…")}`;
+  try{
+    const body = { language: LANG };
+    FIELDS.forEach(f => body[f] = $(f).value);
+    body.your_phone     = $("your_phone").value;
+    body.other_phone    = $("other_phone").value;
+    body.admitted_debt  = $("admitted_debt").value;
+    const r = await api("/api/summons-prep", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(body),
+    });
+    $("summonsText").value = r.document;
+    const box = $("summonsIssues"); box.innerHTML = "";
+    (r.issues || []).filter(i => i.severity === "high").forEach(i => {
+      const p = document.createElement("div");
+      p.className = "panel alert";
+      p.innerHTML = `<h3>Check this first</h3><p>${escapeHtml(i.issue)}</p>` +
+        (i.where ? `<p class="hint">${escapeHtml(i.where)}</p>` : "");
+      box.appendChild(p);
+    });
+    $("summonsOut").classList.remove("hidden");
+  }catch(e){
+    const box = $("summonsIssues");
+    box.innerHTML = `<div class="panel alert"><h3>Could not prepare this</h3>` +
+      `<p>${escapeHtml(e.message)}</p></div>`;
+    $("summonsOut").classList.remove("hidden");
+  }finally{
+    btn.disabled = false;
+    btn.textContent = S.make_summons || "Prepare my Form 1 notes";
+  }
+};
+
+$("sumPrintBtn").onclick = () => {
+  $("printable").textContent = $("summonsText").value;
+  $("printFoot").textContent = S.print_footer || "";
+  printAs(FILENAME.summons());
+};
+
+/* --- save and resume, as a file the user holds ---------------------------
+   Willa still stores nothing: check_privacy.py passes unchanged, because
+   the only artefact is one the user deliberately downloads to their own
+   device. */
+/* --- the portal ----------------------------------------------------------
+   A volumetric swarm: nodes, links between close pairs, and dust bound to
+   the nodes. */
+(function portal(){
+  /* A swarm. Nodes drifting through a volume, links between any two that
+     come close, and dust carried by the nodes — the background field's own
+     three ingredients, given depth instead of a rectangle. */
+  const cv = document.getElementById("orb");
+  if(!cv || !cv.getContext) return;
+  const ctx = cv.getContext("2d");
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let W=0, H=0, R=0, t=0, raf=0, energy=0, CX=0, CY=0, AVAIL=0;
+  const host = document.getElementById("portal");
+  let nodes=[], motes=[], INK = willaInk();
+  const rand = (a,b) => a + Math.random()*(b-a);
+
+  const LINK_BUCKETS = 7;
+
+  /* Dust is drawn in alpha buckets, not one fillStyle per mote. At 2,200
+     motes the draw loop was setting a colour ~1,900 times a frame, which is
+     the exact mistake the background field has a long comment warning about
+     — state changes cost, pixels do not. */
+  const MOTE_LEVELS = 10;
+  const MOTE_BUCKETS = MOTE_LEVELS * 2;
+  /* Ceiling of the alpha range the levels span. A mote's alpha is at most
+     m.a (0.42) with everything else at full, so quantising over 0..1 left
+     half the levels permanently empty and halved the gradation actually
+     available. */
+  const MOTE_TOP = 0.62;
+  let MOTE_STYLE = [], mbx = [], mby = [], mbs = [];
+  const mbn = new Int32Array(MOTE_BUCKETS);
+
+  function buildMoteStyles(){
+    MOTE_STYLE = [];
+    for(const warm of [false, true])
+      for(let i=0; i<MOTE_LEVELS; i++){
+        // Level i covers alpha [i/L, (i+1)/L); draw it at the middle.
+        const a = ((i + 0.5)/MOTE_LEVELS * MOTE_TOP * INK.dotA).toFixed(3);
+        MOTE_STYLE.push(`rgba(${warm ? INK.warm : INK.node},${a})`);
+      }
+  }
+
+  /* Slosh: the cloud leans and swells, a few percent, on two slow sines. With
+     no edge to deform this is free motion — it was the dangerous dial in every
+     previous build and is now just texture. */
+  const SLOSH = 0.06;
+
+  // Width of the cloud, as a multiple of R. Particle radius is chi-distributed
+  // with three degrees of freedom, so the mean sits near 1.6*SPREAD and there
+  // is a long thin tail beyond it that alpha takes care of.
+  const SPREAD = 0.42;
+  /* The dust's own width, separate from the nodes' SPREAD above. 0.75x is a
+     direct 25% reduction in how far the dust cloud reaches: a mote's pixel
+     radius is scale*q, and q scales linearly with whichever SPREAD it was
+     drawn from. */
+  const MOTE_SPREAD = SPREAD * 0.75;
+
+  /* Link reach. Raw degree is the wrong thing to tune against here. */
+  const LINK = 0.354;
+  // Where alpha starts pulling particles down. Set below the tail so the cloud
+  // fades out rather than stopping.
+  /* Where alpha starts pulling particles down, and how hard. 0.75 with a
+     6th-power falloff instead of 1.00 with a 4th. */
+  const FADE = 0.75;
+  const FADE_POW = 6;
+
+  /* How much brighter the orb is than the field behind it. The orb reads INK
+     from the same shared table the background uses, which is right for hue
+     and wrong for weight: it was being drawn at exactly the brightness of
+     the backdrop it is supposed to stand out from. */
+  const GAIN = 1.45;
+  /* How far the swarm reaches, in units of the distance from its centre to
+     the nearest screen edge. */
+  /* 1.77 -> 1.15. At 1.77 the swarm ran to the edges of the screen and there
+     was no figure-ground: a bright field everywhere reads as a starfield,
+     not as an object. */
+  /* 1.15 -> 0.98, a 15% reduction. Everything derives from this: the motes,
+     the node positions, the link reach and — since the halo is sized from
+     `scale` — the atmosphere too. */
+  const REACH = 0.98;
+
+  // Standard normal, Box-Muller. Only used at build time.
+  function gauss(){
+    let u = 0, v = 0;
+    while(u === 0) u = Math.random();
+    while(v === 0) v = Math.random();
+    return Math.sqrt(-2*Math.log(u)) * Math.cos(6.283185307*v);
+  }
+
+  function build(){
+    const small = Math.min(W,H) < 240;
+    // Raised when the swarm grew 2.5x: the same count spread that much
+    // wider is a quarter the density, and the cloud goes thin.
+    const n = small ? 110 : 186;
+
+    nodes = Array.from({length:n}, () => {
+      // Direction: uniform on the sphere. Radius: two populations.
+      const z = rand(-1,1), a = Math.random()*6.2832, s = Math.sqrt(1-z*z);
+      const u = [s*Math.cos(a), z, s*Math.sin(a)];
+
+      /* Radius from a chi distribution with three degrees of freedom — the
+         length of a 3D Gaussian vector. */
+      const q = Math.hypot(gauss(), gauss(), gauss()) * SPREAD;
+
+      // Tangential drift, perpendicular to position so the direction wanders
+      // over the sphere of directions rather than collapsing inward.
+      let v = [rand(-1,1), rand(-1,1), rand(-1,1)];
+      const d = v[0]*u[0] + v[1]*u[1] + v[2]*u[2];
+      v = [v[0]-d*u[0], v[1]-d*u[1], v[2]-d*u[2]];
+      const m = Math.hypot(v[0],v[1],v[2]) || 1;
+      const sp = rand(0.0007, 0.0028);
+
+      return { u, v:[v[0]/m*sp, v[1]/m*sp, v[2]/m*sp], q,
+               // Radial bob, so particles cross the band instead of sitting
+               // in fixed layers. Tiny; the swarm should look alive, not busy.
+               bob: rand(0.010, 0.030), bph: Math.random()*6.2832,
+               r: rand(0.8, 1.9), a: rand(0.3, 0.85),
+               // Warm fraction, raised from 0.15 for brand warmth. This is an
+               // aesthetic choice, not a legibility one: gold measures lower
+               // contrast than navy on the light page (71% of it, after the
+               // deeper gold above), so this trades a little clarity for the
+               // temperature the palette wants.
+               warm: Math.random() < 0.30 };
+    });
+
+    /* Dust, sampled into the same volume as the nodes — NOT bound to one. The
+       previous version orbited each mote around a host node in a small circle. */
+    motes = Array.from({length: small ? 16560 : 42320}, () => {
+      const z = rand(-1,1), a = Math.random()*6.2832, s = Math.sqrt(1-z*z);
+      return {
+        u: [s*Math.cos(a), z, s*Math.sin(a)],
+        q: Math.hypot(gauss(), gauss(), gauss()) * MOTE_SPREAD,
+        bob: rand(0.010, 0.030), bph: Math.random()*6.2832,
+        sz:  rand(0.6, 1.5),
+        a:   rand(0.10, 0.42),
+        warm: Math.random() < 0.30,   // matches the node fraction above
+      };
+    });
+
+    for(let b=0; b<MOTE_BUCKETS; b++){
+      mbx[b] = new Float32Array(motes.length);
+      mby[b] = new Float32Array(motes.length);
+      mbs[b] = new Float32Array(motes.length);
+    }
+  }
+
+  function resize(){
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    W = cv.clientWidth || 280; H = cv.clientHeight || 280;
+    cv.width = W*dpr; cv.height = H*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    /* Centre and scale come from the button's position on the screen, not from
+       the canvas, which is now just the screen. */
+    const r = host.getBoundingClientRect();
+    CX = r.left + r.width/2;
+    CY = r.top  + r.height/2;
+    AVAIL = Math.min(CX, CY, W-CX, H-CY);
+    R = AVAIL * REACH;
+    build();
+  }
+
+  // Scratch, reused each frame so the draw loop allocates nothing.
+  const px=[], py=[], pz=[], pq=[];
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+
+    const spin = t*0.24, cs = Math.cos(spin), sn = Math.sin(spin);
+    const tilt = 0.26 + 0.12*Math.sin(t*0.38), ct = Math.cos(tilt), st = Math.sin(tilt);
+    const scale = R * (1 + 0.020*Math.sin(t*0.8) + energy*0.045);
+
+    /* Atmosphere. Not a border. */
+    // Weight. Thickness is set by the stop positions below, and that turned
+    // out to matter more: the ramp used to begin at the centre, so the glow
+    // was a filled disc washing over the whole swarm rather than a shell
+    // sitting around it.
+    const ATMOS = 0.175;                  // one dial, like GAIN — settled
+    const light = document.documentElement.dataset.theme === "light";
+
+    /* Light needs MORE alpha than dark, not less — the opposite of what this
+       used to assume. */
+    const aBase = (light ? 0.20 : 0.16) * ATMOS * (1 + energy*0.45);
+
+    /* Mostly the node ink, with gold only on the inner ramp. Previously gold
+       carried the peak, which tinted the whole halo warm and made it read as a
+       light source rather than as the swarm's own scatter. */
+    /* A shell, not a filled disc. This is the thickness fix. */
+    /* Sized from `scale`, not `R` — so it breathes with the swarm. It was
+       pinned to the fixed R while the motes ride on scale, which carries the
+       slow inhale and the speaking swell. */
+    const aR = scale * 0.84;
+    const g = ctx.createRadialGradient(CX,CY,0, CX,CY,aR);
+    g.addColorStop(0.00, `rgba(${INK.node},0)`);
+    /* The body of the ring is pale ink on dark and GOLD on light. On navy, a
+       pale halo is light and reads as glow. */
+    const halo = light ? INK.warm : INK.node;
+    g.addColorStop(0.60, `rgba(${halo},0)`);
+    g.addColorStop(0.70, `rgba(${INK.warm},${(aBase*0.35).toFixed(4)})`);
+    g.addColorStop(0.80, `rgba(${halo},${aBase.toFixed(4)})`);
+    g.addColorStop(0.92, `rgba(${halo},${(aBase*0.35).toFixed(4)})`);
+    g.addColorStop(1.00, "rgba(0,0,0,0)");
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+
+    /* The screen edge, softened. At this size the swarm is wider than the
+       space above it — the copy pushes the centred column up, so there is only
+       ever about 320px between the orb's centre and the top of the screen, and
+       the dust runs well past that. */
+    const EDGE = Math.min(W,H) * 0.13;
+    function edge(x, y){
+      const d = Math.min(x, y, W-x, H-y);
+      return d <= 0 ? 0 : d >= EDGE ? 1 : d/EDGE;
+    }
+
+    /* Slosh. Two slow sines over the particle's own direction lean and swell
+       the cloud by a few percent. */
+    const b1 = t*0.7, b2 = t*0.5;
+    const amp = SLOSH * (1 + energy*0.5);
+    function slosh(u){
+      return 1 + amp*Math.sin(2.2*u[1] + b1) + amp*0.7*Math.sin(1.7*u[0] - b2);
+    }
+
+    /* The dissolve. Alpha falls away on roughly the same curve the density
+       does, so the cloud thins out instead of running out — the outermost
+       particles are already invisible by the time there are no more of them. */
+    function fade(q){
+      const x = q / FADE;
+      return 1 / (1 + Math.pow(x, FADE_POW));
+    }
+
+    // --- project nodes ---------------------------------------------------
+    for(let i=0; i<nodes.length; i++){
+      const nd = nodes[i], u = nd.u;
+      const q = nd.q * (1 + nd.bob*Math.sin(t*1.3 + nd.bph));
+      const rr = scale * q * slosh(u);
+      const rx = u[0]*cs + u[2]*sn;
+      const rz = u[2]*cs - u[0]*sn;
+      px[i] = CX + rx*rr;
+      py[i] = CY + (u[1]*ct - rz*st)*rr;
+      pz[i] = u[1]*st + rz*ct;      // -1 far .. 1 near
+      pq[i] = q;
+    }
+
+    // --- links -----------------------------------------------------------
+    /* Bucketed by alpha and stroked as one path per bucket: seven state
+       changes a frame instead of one per link. Same discipline the field uses
+       for its motes — state changes cost, pixels do not. */
+    const lit = INK.linkA * GAIN * (1 + energy*0.75);
+    const paths = Array.from({length:LINK_BUCKETS}, () => new Path2D());
+    const LR = LINK, LR2 = LR*LR;
+    for(let i=0; i<nodes.length; i++){
+      const ui = nodes[i].u, qi = pq[i];
+      const ax = ui[0]*qi, ay = ui[1]*qi, az = ui[2]*qi;
+      for(let j=i+1; j<nodes.length; j++){
+        const uj = nodes[j].u, qj = pq[j];
+        const dx = ax - uj[0]*qj, dy = ay - uj[1]*qj, dz = az - uj[2]*qj;
+        const d2 = dx*dx + dy*dy + dz*dz;
+        if(d2 > LR2) continue;
+        const close = 1 - Math.sqrt(d2)/LR;
+        const near  = ((pz[i]+pz[j])*0.5 + 1) * 0.5;
+        const w = close * (0.10 + 0.90*near*near) * fade((pq[i]+pq[j])*0.5)
+                  * edge((px[i]+px[j])*0.5, (py[i]+py[j])*0.5);
+        const b = Math.min(LINK_BUCKETS-1, (w*LINK_BUCKETS)|0);
+        if(b === 0) continue;
+        paths[b].moveTo(px[i], py[i]);
+        paths[b].lineTo(px[j], py[j]);
+      }
+    }
+    for(let b=1; b<LINK_BUCKETS; b++){
+      const w = (b+0.5)/LINK_BUCKETS;
+      ctx.strokeStyle = `rgba(${INK.link},${(lit*w).toFixed(3)})`;
+      ctx.lineWidth = 0.5 + w*0.6;
+      ctx.stroke(paths[b]);
+    }
+
+    // --- dust ------------------------------------------------------------
+    // Projected exactly like a node — same spin, same tilt, same slosh, same
+    // fade — because a mote now IS a node in every respect except that no
+    // link is ever drawn to it. That shared projection is the entire reason
+    // this still reads as one object with the mesh rather than a separate
+    // layer of dust sitting near it.
+    mbn.fill(0);
+    for(const m of motes){
+      const u = m.u;
+      const q = m.q * (1 + m.bob*Math.sin(t*1.3 + m.bph));
+      const rr = scale * q * slosh(u);
+      const rx = u[0]*cs + u[2]*sn;
+      const rz = u[2]*cs - u[0]*sn;
+      const mx = CX + rx*rr, my = CY + (u[1]*ct - rz*st)*rr;
+      const sz = u[1]*st + rz*ct;
+      const near = (sz + 1) * 0.5;
+
+      // Depth floor raised from 0.16 to 0.34: the back of the swarm was
+      // fading almost to nothing, which thinned the silhouette.
+      const a = m.a * (0.34 + 0.66*near) * GAIN * fade(q) * edge(mx, my);
+      if(a < 0.02) continue;
+      // Quantise into an alpha level rather than setting a colour here.
+      let lv = (a / MOTE_TOP * MOTE_LEVELS) | 0;
+      if(lv >= MOTE_LEVELS) lv = MOTE_LEVELS - 1;
+      const b = m.warm ? MOTE_LEVELS + lv : lv;
+      const k = mbn[b]++;
+      mbx[b][k] = mx; mby[b][k] = my; mbs[b][k] = m.sz;
+    }
+
+    for(let b=0; b<MOTE_BUCKETS; b++){
+      const n = mbn[b];
+      if(!n) continue;
+      ctx.fillStyle = MOTE_STYLE[b];
+      const X = mbx[b], Y = mby[b], S = mbs[b];
+      for(let i=0; i<n; i++) ctx.fillRect(X[i], Y[i], S[i], S[i]);
+    }
+
+    // --- nodes -----------------------------------------------------------
+    for(let i=0; i<nodes.length; i++){
+      const nd = nodes[i];
+      const near = (pz[i] + 1) * 0.5;
+      // Clamped: GAIN pushes the brightest near-side nodes past 1.0, which
+      // browsers silently clip. Doing it here keeps the value honest.
+      const a = Math.min(1, nd.a * (0.30 + 0.70*near) * GAIN
+                            * fade(pq[i]) * edge(px[i], py[i]) * INK.dotA);
+      if(a < 0.02) continue;
+      ctx.beginPath();
+      ctx.arc(px[i], py[i], nd.r * (0.45 + 0.6*near), 0, 6.2832);
+      ctx.fillStyle = `rgba(${nd.warm ? INK.warm : INK.node},${a.toFixed(3)})`;
+      ctx.fill();
+    }
+  }
+
+  function step(){
+    const target = document.getElementById("portal").classList.contains("speaking") ? 1 : 0;
+    energy += (target - energy) * 0.05;
+    t += 0.0095 + energy*0.007;
+
+    const drive = 1 + energy*0.8;
+    for(const nd of nodes){
+      const u = nd.u, v = nd.v;
+      u[0] += v[0]*drive; u[1] += v[1]*drive; u[2] += v[2]*drive;
+      // Renormalise the direction, then re-orthogonalise the velocity against
+      // it. Without the second step a particle spirals to a pole and stops.
+      const m = Math.hypot(u[0],u[1],u[2]) || 1;
+      u[0]/=m; u[1]/=m; u[2]/=m;
+      const d = v[0]*u[0] + v[1]*u[1] + v[2]*u[2];
+      v[0] -= d*u[0]; v[1] -= d*u[1]; v[2] -= d*u[2];
+    }
+    // Motes no longer have their own motion to integrate — no host to
+    // orbit, no angle to advance. Their only movement is the shared
+    // spin/tilt/slosh/bob applied in draw(), which is what keeps 37,000 of
+    // them costing nothing extra per frame here.
+
+    PULSE.phase = t;
+    PULSE.energy = energy;
+    draw();
+    raf = requestAnimationFrame(step);
+  }
+
+  buildMoteStyles();
+  resize();
+  addEventListener("resize", () => { resize(); draw(); });
+  addEventListener("willa-theme", () => {
+    INK = willaInk(); buildMoteStyles();
+    if(still) draw();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if(document.hidden){ cancelAnimationFrame(raf); raf = 0; }
+    else if(!raf && !still){ raf = requestAnimationFrame(step); }
+  });
+  if(still){ draw(); } else { raf = requestAnimationFrame(step); }
+  addEventListener("willa-entered", () => { PULSE.energy = 0; });
+})();
+
+/* --- speech ---------------------------------------------------------------
+   Two constraints. LOCAL VOICES ONLY. */
+const BCP47 = { en:"en-ZA", af:"af-ZA", zu:"zu-ZA", xh:"xh-ZA", st:"st-ZA",
+                nso:"nso-ZA", tn:"tn-ZA", ss:"ss-ZA", ts:"ts-ZA",
+                ve:"ve-ZA", nr:"nr-ZA" };
+
+function voicesReady(){
+  return new Promise(resolve => {
+    if(!("speechSynthesis" in window)) return resolve([]);
+    const got = speechSynthesis.getVoices();
+    if(got.length) return resolve(got);
+    let done = false;
+    const finish = () => { if(!done){ done = true; resolve(speechSynthesis.getVoices()); } };
+    speechSynthesis.addEventListener("voiceschanged", finish, { once:true });
+    setTimeout(finish, 1200);   // some browsers never fire it
+  });
+}
+
+/* Why this keeps failing, and how to tell which reason applies. Three
+   different conditions produce silence and they need different fixes, so
+   the diagnostic below distinguishes them instead of showing one message:
+   no voices at all      the engine has not populated getVoices() yet, or
+   the platform genuinely has none installed voices, none local    every
+   voice reports localService === false. */
+let VOICE_REPORT = "";
+
+/* Whether the engine has actually begun speaking, as opposed to having
+   accepted the request. */
+let SPEECH_STARTED = false;
+
+async function localVoiceFor(code){
+  const all = await voicesReady();
+  const want = (BCP47[code] || code).toLowerCase();
+  const base = want.split("-")[0];
+  const local = all.filter(v => v.localService);
+
+  const match =
+       local.find(v => v.lang.toLowerCase().replace("_","-") === want)
+    || local.find(v => v.lang.toLowerCase().replace("_","-").startsWith(base + "-"))
+    || local.find(v => v.lang.toLowerCase() === base)
+    || null;
+
+  if(match){ VOICE_REPORT = ""; return match; }
+
+  if(!all.length){
+    VOICE_REPORT = "This browser reported no speech voices at all.";
+  } else if(!local.length){
+    const langs = [...new Set(all.map(v => v.lang))].slice(0, 6).join(", ");
+    VOICE_REPORT =
+      `${all.length} voices found, but none are on-device — this browser ` +
+      `reports every one as remote. Willa will not use a remote voice ` +
+      `because the text would be sent to the vendor to synthesise. ` +
+      `Safari reports the same macOS voices as on-device. (${langs}…)`;
+  } else {
+    const langs = [...new Set(local.map(v => v.lang))].slice(0, 8).join(", ");
+    VOICE_REPORT =
+      `${local.length} on-device voices found, none for "${want}". ` +
+      `Available: ${langs}`;
+  }
+  console.warn("[willa speech]", VOICE_REPORT,
+               all.map(v => `${v.name} ${v.lang} local=${v.localService}`));
+  return null;
+}
+
+let speaking = false;
+function stopSpeaking(){
+  if("speechSynthesis" in window) speechSynthesis.cancel();
+  speaking = false;
+  $("portal").classList.remove("speaking");
+}
+
+async function speakIntro(code){
+  stopSpeaking();
+  const note = $("landingNote");
+  const voice = await localVoiceFor(code);
+  if(!voice){
+    note.textContent = VOICE_REPORT ||
+      S.intro_no_voice ||
+      "This device has no voice installed for your language.";
+    return false;
+  }
+
+  /* Speak sentence by sentence rather than as one block. A single long
+     utterance comes out flat and rushed: the engine gets no signal to
+     breathe, so clauses run together and the whole thing sounds like a
+     announcement rather than a person. */
+  const parts = [...POINT_KEYS.map(k => S[k])].filter(Boolean)
+    .flatMap(p => p.split(/(?<=[.!?])\s+/))
+    .map(p => p.trim()).filter(Boolean);
+
+  const queue = parts.map((text, i) => {
+    const u = new SpeechSynthesisUtterance(text);
+    u.voice = voice;
+    u.lang  = voice.lang;
+    // Around conversational pace, drifting a little either side so successive
+    // sentences do not land identically.
+    u.rate  = 0.97 + (i % 2 ? -0.04 : 0.03);
+    u.pitch = 1.0  + (i % 2 ? 0.03 : -0.02);
+    u.volume = 1;
+    return u;
+  });
+
+  // A short silence between sentences. Chrome ignores trailing whitespace in
+  // an utterance, so the pause has to be a real gap between them.
+  queue.forEach((u, i) => {
+    u.onend = () => {
+      if(i === queue.length - 1) return stopSpeaking();
+      setTimeout(() => { if(speaking) speechSynthesis.speak(queue[i+1]); }, 380);
+    };
+    u.onerror = stopSpeaking;
+  });
+
+  if(!queue.length){
+    // POINT_KEYS resolved to nothing — the strings had not loaded. Silent
+    // failure here would be indistinguishable from a missing voice.
+    note.textContent = "The intro text has not loaded yet.";
+    return false;
+  }
+
+  SPEECH_STARTED = false;
+  queue[0].onstart = () => { SPEECH_STARTED = true; };
+
+  speaking = true;
+  $("portal").classList.add("speaking");
+  note.textContent = "";
+  speechSynthesis.speak(queue[0]);
+  return true;
+}
+
+/* Key points, one at a time. Four short claims cycle rather than sitting
+   in a list: a person deciding whether this page is for them reads one
+   line, not a bulleted feature set. */
+const POINT_KEYS = ["point_1","point_2","point_3","point_4"];
+let pointTimer = null, pointIdx = 0;
+
+function renderPoints(){
+  const wrap = $("heroPoints");
+  wrap.innerHTML = "";
+  POINT_KEYS.forEach((k, i) => {
+    const p = document.createElement("p");
+    p.className = "hero-point" + (i === 0 ? " on" : "");
+    p.textContent = S[k] || "";
+    wrap.appendChild(p);
+  });
+  pointIdx = 0;
+  clearInterval(pointTimer);
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  pointTimer = setInterval(() => {
+    const all = wrap.querySelectorAll(".hero-point");
+    if(!all.length) return;
+    all[pointIdx].classList.remove("on");
+    pointIdx = (pointIdx + 1) % all.length;
+    all[pointIdx].classList.add("on");
+  }, 4600);
+}
+
+
+// The orb enters. Listening is its own control, so a device with no voice
+// cannot silently skip the landing screen — which is exactly what the first
+// version did, because a failed speakIntro() fell through to enterApp().
+$("portal").onclick = enterApp;
+
+/* Speak without being asked. Browsers block speech synthesis until the
+   page has been interacted with — Chrome and Safari both refuse silently,
+   with no error to catch. */
+let autoSpoken = false;
+/* The ticker reads a cached file. Duplicating the list once lets the marquee
+   translate by exactly -50% and loop without a visible seam. */
+async function loadNotices(){
+  let data;
+  try{ data = await api("/api/notices"); }
+  catch(e){ return $("tickerBar").classList.add("hidden"); }
+  const lines = (data.notices || []).filter(Boolean);
+  if(!lines.length) return $("tickerBar").classList.add("hidden");
+  if(data.fetched) lines.push(`Notices current as at ${data.fetched}`);
+
+  const track = $("tickerTrack");
+  track.innerHTML = "";
+  [0,1].forEach(() => lines.forEach(line => {
+    const span = document.createElement("span");
+    span.className = "ticker-item";
+    span.textContent = line;
+    track.appendChild(span);
+  }));
+}
+
+async function autoSpeak(){
+  if(autoSpoken || speaking) return;
+  if(!await speakIntro("en")) return;      // no voice, or no text yet
+
+  // Wait for onstart. If it never comes, the browser took the utterance and
+  // dropped it for want of a gesture — so undo everything and stay armed.
+  autoSpoken = await new Promise(resolve => {
+    const deadline = setTimeout(() => resolve(SPEECH_STARTED), 1000);
+    const poll = setInterval(() => {
+      if(SPEECH_STARTED){ clearInterval(poll); clearTimeout(deadline); resolve(true); }
+    }, 50);
+  });
+
+  if(!autoSpoken){
+    stopSpeaking();
+    $("landingNote").textContent =
+      "Tap anywhere to hear this read aloud.";
+  }
+}
+/* Browsers refuse speech synthesis until the page has had a user gesture,
+   so the automatic intro needs a fallback: the first interaction retries
+   it. */
+function armAutoSpeak(){
+  const events = ["pointerdown","keydown","wheel","touchstart"];
+  const retry = async () => {
+    if(speaking || autoSpoken) return disarm();
+    await autoSpeak();
+    if(autoSpoken) disarm();
+  };
+  const disarm = () =>
+    events.forEach(ev => removeEventListener(ev, retry));
+  events.forEach(ev => addEventListener(ev, retry, { passive:true }));
+}
+
+function enterApp(){
+  stopSpeaking();
+  $("landing").classList.add("gone");
+  document.body.classList.remove("landing-open");
+  clearInterval(pointTimer);
+  dispatchEvent(new Event("willa-entered"));
+  // Language is no longer picked on the landing screen, so the selector is
+  // the first thing inside — all nine remain available, only the spoken
+  // intro is English.
+  show("stepLang");
+}
+
+/* --- routing -------------------------------------------------------------
+   The filing process runs over weeks: write the letter, wait fourteen
+   days, prove delivery, go to court. */
+let MODE = "letter";
+
+/* The page heading follows the step. It read "Write your letter of demand"
+   on every screen, including the affidavit and the Form 1 notes, so
+   someone who arrived at step 03 saw the title of step 01 above the work
+   they were doing — the exact confusion the task list was just rewritten
+   to remove. */
+const HEADINGS = {
+  letter: {
+    title: "Write your letter of demand",
+    lede: "Step 01 — the demand that must reach them before you can go to court",
+  },
+  affidavit: {
+    title: "Prove you delivered it",
+    lede: "Step 02 — the affidavit the clerk needs before accepting your claim",
+  },
+  court: {
+    title: "Prepare for court",
+    lede: "Step 03 — what to write on Form 1, after 14 days with no payment",
+  },
+  tasks: {
+    title: "Your claim, step by step",
+    lede: "Help preparing a Small Claims Court claim, from the first letter onward",
+  },
+};
+
+/* Which heading is on screen. Held separately from MODE because the task
+   chooser has its own heading and no mode of its own, and because a language
+   change has to re-render whatever is currently showing. */
+let HEADING_KEY = "letter";
+
+function setHeading(key){
+  HEADING_KEY = key;
+  const h = HEADINGS[key] || HEADINGS.letter;
+  // The full stop is a styled element, not punctuation in the string — a
+  // translator should never have to carry it.
+  $("heroTitle").innerHTML =
+    `${escapeHtml(S["hero_" + key] || h.title)}<span class="dot">.</span>`;
+  $("tagline").textContent = S["lede_" + key] || h.lede;
+}
+
+const SECTIONS = ["stepLang","stepTask","stepSave","stepForm",
+                  "stepReview","stepDeliver","stepSummons"];
+
+function show(...ids){
+  SECTIONS.forEach(id => $(id).classList.toggle("hidden", !ids.includes(id)));
+  $("backTasks").classList.toggle("hidden", ids.includes("stepLang") || ids.includes("stepTask"));
+  scrollTo({ top:0, behavior:"smooth" });
+}
+
+function showTasks(){
+  MODE = "letter";
+  setHeading("tasks");
+  show("stepTask", "stepSave");
+}
+
+$("backTasks").onclick = showTasks;
+
+$("taskLetter").onclick = () => {
+  MODE = "letter";
+  setHeading("letter");
+  show("stepForm", "stepSave");
+  $("formIntro").classList.add("hidden");
+  $("generateBtn").textContent = S.generate || "Prepare my letter";
+  $("your_name").focus({ preventScroll:true });
+};
+
+$("taskAffidavit").onclick = () => {
+  MODE = "affidavit";
+  setHeading("affidavit");
+  // Prefill from the letter flow if it happened in this session; otherwise
+  // these are simply empty and the user fills seven short fields.
+  [["aff_first","your_name"],["aff_surname","your_surname"],
+   ["aff_address","your_address"]].forEach(([to,from]) => {
+     if(!$(to).value && $(from).value) $(to).value = $(from).value;
+   });
+  show("stepDeliver", "stepSave");
+  refreshDelivery();
+};
+
+$("taskCourt").onclick = () => {
+  MODE = "court";
+  setHeading("court");
+  show("stepForm", "stepSummons", "stepSave");
+  $("formIntro").classList.remove("hidden");
+  $("generateBtn").textContent = S.make_summons || "Prepare my Form 1 notes";
+  $("your_name").focus({ preventScroll:true });
+};
+
+$("taskResume").onclick = () => $("loadInput").click();
+
+const SAVE_FIELDS = [...FIELDS,
+  "your_phone","other_phone","admitted_debt",
+  "aff_id","aff_place","aff_date","aff_time","aff_recipient","aff_other"];
+
+const enc = new TextEncoder(), dec = new TextDecoder();
+const b64  = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const unb64 = (str) => Uint8Array.from(atob(str), c => c.charCodeAt(0));
+
+async function keyFrom(pass, salt){
+  const base = await crypto.subtle.importKey("raw", enc.encode(pass), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name:"PBKDF2", salt, iterations:250000, hash:"SHA-256" },
+    base, { name:"AES-GCM", length:256 }, false, ["encrypt","decrypt"]);
+}
+
+function collect(){
+  const data = { language: LANG };
+  SAVE_FIELDS.forEach(f => { const el = $(f); if(el) data[f] = el.value; });
+  const m = document.querySelector('input[name="dmethod"]:checked');
+  if(m) data.dmethod = m.value;
+  return data;
+}
+
+function note(msg, kind){
+  const box = $("saveNote");
+  box.className = "panel " + (kind || "notice");
+  box.classList.remove("hidden");
+  box.innerHTML = `<p style="margin:0">${escapeHtml(msg)}</p>`;
+}
+
+$("saveBtn").onclick = async () => {
+  const pass = $("savePass").value;
+  let payload = { willa: 1, saved: new Date().toISOString().slice(0,10), encrypted: false };
+  const plain = JSON.stringify(collect());
+  try{
+    if(pass){
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv   = crypto.getRandomValues(new Uint8Array(12));
+      const key  = await keyFrom(pass, salt);
+      const ct   = await crypto.subtle.encrypt({ name:"AES-GCM", iv }, key, enc.encode(plain));
+      payload = { ...payload, encrypted:true, salt:b64(salt), iv:b64(iv), ct:b64(ct) };
+    } else {
+      payload.data = JSON.parse(plain);
+    }
+  }catch(e){ return note("Could not save: " + e.message, "alert"); }
+
+  const blob = new Blob([JSON.stringify(payload)], { type:"application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = FILENAME.claim() + ".willa";
+  a.click(); URL.revokeObjectURL(a.href);
+  note(S.save_done || "Saved.", pass ? "notice" : "alert");
+};
+
+$("loadBtn").onclick = () => $("loadInput").click();
+
+/* --- the device store ----------------------------------------------------
+   Off unless config.CLAIMS_STORE_ENABLED is True on the server. The whole
+   UI below stays hidden when it is off; /api/claims answers
+   {enabled:false} and nothing here renders. */
+let CLAIM_ID = null;
+let STORE_ON = false;
+
+async function initStore(){
+  let r;
+  try{ r = await api("/api/claims"); }catch(e){ return; }
+  STORE_ON = !!r.enabled;
+  $("storeBox").classList.toggle("hidden", !STORE_ON);
+  if(STORE_ON) refreshChain();
+}
+
+async function refreshChain(){
+  try{
+    const v = await api("/api/claims/verify");
+    $("storeChain").textContent = v.intact
+      ? `Ledger intact — ${v.records} record${v.records === 1 ? "" : "s"}, each one signed against the one before it.`
+      : `Ledger broken at record ${v.problems[0].record}: ${v.problems[0].problem}. Someone or something changed a saved claim after it was written.`;
+  }catch(e){ $("storeChain").textContent = ""; }
+}
+
+$("storeSaveBtn").onclick = async () => {
+  const btn = $("storeSaveBtn");
+  btn.disabled = true;
+  try{
+    const r = await api("/api/claims", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ claim_id: CLAIM_ID || "", claim: collect() }),
+    });
+    CLAIM_ID = r.claim_id;
+    note(`Saved to this device as ${r.claim_id} (version ${r.seq}).`, "notice");
+    refreshChain();
+  }catch(e){
+    note("Could not save to this device: " + e.message, "alert");
+  }finally{ btn.disabled = false; }
+};
+
+$("storeListBtn").onclick = async () => {
+  const box = $("storeList");
+  box.classList.remove("hidden");
+  box.innerHTML = `<p class="hint">Loading…</p>`;
+  let r;
+  try{ r = await api("/api/claims"); }
+  catch(e){ box.innerHTML = `<p class="hint">Could not read saved claims: ${escapeHtml(e.message)}</p>`; return; }
+
+  if(!r.claims || !r.claims.length){
+    box.innerHTML = `<p class="hint">Nothing saved on this device yet.</p>`;
+    return;
+  }
+  box.innerHTML = `<div class="panel" style="margin:0"><h3>Saved on this device</h3>` +
+    r.claims.map(c =>
+      `<button class="btn btn-ghost claim-pick" type="button" data-id="${escapeHtml(c.claim_id)}" ` +
+      `style="display:block;width:100%;text-align:start;margin-top:10px">` +
+      `${escapeHtml(c.label || c.claim_id)}` +
+      (c.amount ? ` — R${escapeHtml(c.amount)}` : "") +
+      `<br><span class="hint">${escapeHtml(c.updated || "")}` +
+      (c.versions > 1 ? ` · ${c.versions} versions` : "") + `</span></button>`
+    ).join("") + `</div>`;
+
+  box.querySelectorAll(".claim-pick").forEach(b => {
+    b.onclick = async () => {
+      try{
+        const got = await api("/api/claims/" + encodeURIComponent(b.dataset.id));
+        CLAIM_ID = got.claim_id;
+        await applyClaim(got.claim);
+        note(`Opened ${got.claim_id} (version ${got.seq} of ${got.versions}).`, "notice");
+      }catch(e){ note("Could not open that claim: " + e.message, "alert"); }
+    };
+  });
+};
+
+$("loadInput").onchange = async (ev) => {
+  const file = ev.target.files && ev.target.files[0];
+  if(!file) return;
+  let payload;
+  try{ payload = JSON.parse(await file.text()); }
+  catch{ return note(S.load_bad_file || "Not a Willa file.", "alert"); }
+  if(!payload || payload.willa !== 1) return note(S.load_bad_file || "Not a Willa file.", "alert");
+
+  let data = payload.data;
+  if(payload.encrypted){
+    const pass = prompt(S.load_pass_prompt || "This file has a password.");
+    if(pass === null) return;
+    try{
+      const key = await keyFrom(pass, unb64(payload.salt));
+      const pt  = await crypto.subtle.decrypt(
+        { name:"AES-GCM", iv: unb64(payload.iv) }, key, unb64(payload.ct));
+      data = JSON.parse(dec.decode(pt));
+    }catch{
+      // AES-GCM fails authentication on a wrong key, so this is the only
+      // outcome for a bad password — there is no partial decrypt to leak.
+      return note(S.load_wrong_pass || "Wrong password.", "alert");
+    }
+  }
+  if(!data) return note(S.load_bad_file || "Not a Willa file.", "alert");
+
+  await applyClaim(data);
+  note(S.load_done || "Claim loaded.", "notice");
+  ev.target.value = "";
+};
+
+/* Put a saved claim back into the form. Extracted from the file-load
+   handler so the device store below reuses it verbatim. */
+async function applyClaim(data){
+  SAVE_FIELDS.forEach(f => { const el = $(f); if(el && data[f] !== undefined) el.value = data[f]; });
+  if(data.dmethod){
+    const r = document.getElementById("dm_" + data.dmethod);
+    if(r){ r.checked = true; refreshDelivery(); }
+  }
+  if(data.language && data.language !== LANG){
+    LANG = data.language;
+    try{ await loadStrings(LANG); applyStrings(); }catch(e){}
+  }
+  // Back to the chooser with everything filled in, so the user picks what
+  // they came back to do rather than being dropped mid-flow.
+  showTasks();
+}
+
+/* --- file names ----------------------------------------------------------
+   Every document Willa produces is named for what it is and dated with the
+   day it was generated. */
+function stamp(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+const FILENAME = {
+  letter:    () => `letter-of-demand-J993-${stamp()}`,
+  affidavit: () => `affidavit-of-service-J994-${stamp()}`,
+  summons:   () => `form-1-preparation-${stamp()}`,
+  claim:     () => `my-claim-${stamp()}`,
+};
+
+function downloadText(text, name){
+  const blob = new Blob([text], { type:"text/plain;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* Naming a PDF is indirect: there is no API for it. Browsers seed the
+   "Save as PDF" filename from document.title, so the title is swapped for
+   the duration of the print and put back afterwards. */
+const PAGE_TITLE = document.title;
+function printAs(name){
+  document.title = name;
+  let restored = false;
+  const restore = () => {
+    if(restored) return;
+    restored = true;
+    document.title = PAGE_TITLE;
+    removeEventListener("afterprint", restore);
+  };
+  addEventListener("afterprint", restore);
+  setTimeout(restore, 8000);
+  print();
+}
+
+/* Both versions in one file, always. Downloading only the half on screen
+   would undo the entire safeguard: the whole point of producing English
+   alongside the translation is that they travel together to the clerk. */
+function letterForExport(){
+  const t = $("letterTranslated").value.trim();
+  if(!t) return $("letterOut").value;
+  const label = $("translatedLabel").textContent || "Translated";
+  return `${label}\n\n${t}\n\n${"—".repeat(30)}\n\n` +
+         `The same letter in English\n\n${$("letterOut").value}`;
+}
+
+$("downloadBtn").onclick = () => {
+  downloadText(letterForExport(), FILENAME.letter() + ".txt");
+};
+$("backBtn").onclick = () => show("stepLang");
+$("restartBtn").onclick = () => {
+  SAVE_FIELDS.forEach(f => { const el = $(f); if(el) el.value = ""; });
+  showTasks();
+};
+
+document.body.classList.add("landing-open");
+boot();
+</script>
+</body>
+</html>

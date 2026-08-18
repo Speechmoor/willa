@@ -1,0 +1,75 @@
+{
+ "files": {
+  "Small_Claims_Courts_Act_61_of_1984.pdf": {
+   "url": "https://www.justice.gov.za/legislation/acts/1984-061.pdf",
+   "why": "The Act itself. s29(1) is the letter of demand; s7/s14-16 govern jurisdiction, who may sue, and what is excluded.",
+   "sha256": "bbd8e29f2765f55fdbc6130fe981a17fac873b6dd7c308e80254038bfc5a43d0",
+   "first_seen": "2026-08-15",
+   "last_checked": "2026-08-15",
+   "history": [
+    {
+     "date": "2026-08-15",
+     "sha256": "bbd8e29f2765f55fdbc6130fe981a17fac873b6dd7c308e80254038bfc5a43d0",
+     "note": "first fetch"
+    }
+   ]
+  },
+  "Small_Claims_Courts_Rules.pdf": {
+   "url": "https://media.lawlibrary.org.za/media/legislation/325286/source_file/0bed150a2ed6ac58/2022-r2573.pdf",
+   "why": "Rules Regulating Matters in Respect of Small Claims Courts. Rule 7 covers the demand and proof of delivery, and Annexure 1 carries the official forms.",
+   "sha256": "1a868264d0066bc0d23b4e8878e337087d1936065e85bea0299fa83c90a284a1",
+   "first_seen": "2026-08-15",
+   "last_checked": "2026-08-15",
+   "history": [
+    {
+     "date": "2026-08-15",
+     "sha256": "1a868264d0066bc0d23b4e8878e337087d1936065e85bea0299fa83c90a284a1",
+     "note": "first fetch"
+    }
+   ]
+  },
+  "Consumer_Protection_Act_68_of_2008.pdf": {
+   "url": "https://www.thedtic.gov.za/wp-content/uploads/Consumer_Protection_Act.pdf",
+   "why": "CPA 68 of 2008, published by the dtic. Relevant where the claim is a consumer transaction — defective goods, services not rendered.",
+   "sha256": "1a6dca7c3688bdd04db7693db4093dce4af9890bd8800ce088d919577f89817f",
+   "first_seen": "2026-08-15",
+   "last_checked": "2026-08-15",
+   "history": [
+    {
+     "date": "2026-08-15",
+     "sha256": "1a6dca7c3688bdd04db7693db4093dce4af9890bd8800ce088d919577f89817f",
+     "note": "first fetch"
+    }
+   ]
+  },
+  "Form_J993_Letter_of_Demand.pdf": {
+   "url": "https://www.justice.gov.za/forms/scc/scc_J993-Form04.pdf",
+   "why": "Form 4. The document Willa is drafting. A plain-text transcription already lives in data/forms/ and is what the prompt uses, so this PDF failing is not fatal.",
+   "sha256": "f311cdc9ade834317e30d1b5af30e91cb93c6aaf0db64e491a7d55be695d433a",
+   "first_seen": "2026-08-15",
+   "last_checked": "2026-08-15",
+   "history": [
+    {
+     "date": "2026-08-15",
+     "sha256": "f311cdc9ade834317e30d1b5af30e91cb93c6aaf0db64e491a7d55be695d433a",
+     "note": "first fetch"
+    }
+   ]
+  },
+  "Form_J994_Affidavit_rule_7_2.pdf": {
+   "url": "https://www.justice.gov.za/forms/scc/scc_J994-Form05.pdf",
+   "why": "Form 5. Affidavit proving personal delivery of the demand.",
+   "sha256": "af6eeb75f7d6ba2a651a45a25c5e3bcb5bd5c9dcfb8eda92b21404867eb0a085",
+   "first_seen": "2026-08-15",
+   "last_checked": "2026-08-15",
+   "history": [
+    {
+     "date": "2026-08-15",
+     "sha256": "af6eeb75f7d6ba2a651a45a25c5e3bcb5bd5c9dcfb8eda92b21404867eb0a085",
+     "note": "first fetch"
+    }
+   ]
+  }
+ },
+ "last_run": "2026-08-15"
+}
