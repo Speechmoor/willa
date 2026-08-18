@@ -9,12 +9,14 @@ steps the application needs no network access.
 
 ## Quick start
 
-Install [Ollama](https://ollama.com/download) and Python 3.11–3.13, then:
+macOS or Linux. On Windows use WSL, or follow *Setup by hand* below, which
+works in PowerShell. You need [Ollama](https://ollama.com/download), Python
+3.11–3.13, and about 8 GB of free memory. 16 GB of RAM makes it comfortable.
 
 ```bash
-ollama serve        # separate terminal, leave it running
-./setup.sh          # or ./setup.sh --translate for all nine languages
-./run.sh            # http://127.0.0.1:8000
+ollama serve                 # separate terminal, leave it running
+./setup.sh --translate       # drop --translate for English only
+./run.sh                     # http://127.0.0.1:8000
 ```
 
 `setup.sh` creates the virtualenv, installs dependencies, pulls the models and
@@ -23,8 +25,31 @@ builds the index. It is safe to re-run and skips anything already done.
 `run.sh` calls it first so a missing dependency arrives as a checklist rather
 than as a traceback.
 
-Budget about 6 GB of model downloads, or 8.5 GB with `--translate`. After that
-the application needs no network access at all.
+Budget about 8.5 GB of model downloads, or 6 GB without `--translate`. After
+that the application needs no network access at all.
+
+**Drafting takes 40 to 60 seconds** on Qwen3-8B. That is the cost of running
+the model locally rather than calling an API, and it is discussed under
+*Known limitations*. The page shows progress; it has not hung.
+
+## If you are evaluating this
+
+Start here, because it needs no models and finishes instantly:
+
+```bash
+./setup.sh --check                # what is installed, what is not
+python scripts/check_rules.py     # 26 statutory fixtures, 0.04 seconds
+```
+
+`check_rules.py` is the clearest thing in the repository. It exercises the
+jurisdiction gate in both directions: every rule fires when it should and
+stays silent when it should not, no letter is generated for a claim the court
+cannot hear, and every refusal carries a correction the claimant can act on.
+No model is involved, so the result is the same on every run.
+
+Then `python scripts/check_egress.py` and `check_privacy.py` for the privacy
+claims, which also need no models. Run the application itself last, since that
+is the part that needs the 8 GB download.
 
 ## Setup by hand
 

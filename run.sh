@@ -10,8 +10,10 @@ cd "$(dirname "$0")"
   exit 1
 }
 
+set +u
 # shellcheck disable=SC1091
 source .venv/bin/activate
+set -u
 
 printf '\n\033[1mWilla\033[0m  http://127.0.0.1:8000   (ctrl-c to stop)\n'
 printf 'Bound to loopback. Nothing you type leaves this machine.\n\n'

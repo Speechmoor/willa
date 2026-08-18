@@ -58,8 +58,12 @@ else
   todo "create .venv"; MISSING=1
 fi
 if [ -d .venv ] && [ -x .venv/bin/python ]; then
+  # `set -u` and venv activate scripts disagree about PS1 on some shells, and
+  # the failure looks like a bug in Willa rather than in bash.
+  set +u
   # shellcheck disable=SC1091
   source .venv/bin/activate
+  set -u
   if python -c 'import fastapi, uvicorn, numpy, pydantic, httpx, pypdf, cryptography' 2>/dev/null; then
     ok "requirements.txt satisfied"
   elif need "pip install -r requirements.txt"; then
